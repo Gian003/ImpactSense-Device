@@ -98,6 +98,15 @@ bool reportHelmetStatus() {
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
 
+  // Only attach a speed sample once GPS has a real fix - STUB_LATITUDE/
+  // STUB_LONGITUDE (indoors, no satellite lock) would otherwise pollute
+  // Speed Reports per Area with a fake, always-identical location.
+  if (gpsHasFix()) {
+    doc["latitude"]  = getLatitude();
+    doc["longitude"] = getLongitude();
+    doc["speed_kph"] = (int) round(getSpeedKph());
+  }
+
   String body;
   serializeJson(doc, body);
 

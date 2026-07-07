@@ -24,3 +24,11 @@ double getLatitude() {
 double getLongitude() {
   return gps.location.isValid() ? gps.location.lng() : STUB_LONGITUDE;
 }
+
+double getSpeedKph() {
+  return gps.speed.isValid() ? gps.speed.kmph() : 0.0;
+}
+
+bool gpsHasFix() {
+  return gps.location.isValid();
+}
