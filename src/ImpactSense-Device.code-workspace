@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../../../ImpactSense/ImpactSense-Device"
+		},
+		{
+			"name": "ImpactSense",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
