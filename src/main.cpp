@@ -61,6 +61,7 @@ void loop() {
 
   if (millis() - lastHelmetStatusAt > DEVICE_STATUS_INTERVAL_MS) {
     lastHelmetStatusAt = millis();
+    retryPendingCrashReport(); // flush any crash report that failed to send earlier
     reportHelmetStatus();
     refreshContactCache();
   }

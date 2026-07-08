@@ -8,8 +8,22 @@
 // MPU6050 (I2C):      SDA=21, SCL=22, VCC=3.3V, GND=GND
 // NEO-6M GPS (UART2):  GPS TX -> ESP32 RX=16, GPS RX -> ESP32 TX=17
 // SIM800L GSM (UART1): SIM800 TX -> ESP32 RX=26, SIM800 RX -> ESP32 TX=27
-//   SIM800L needs its own 4V regulated supply (not the ESP32 3.3V rail) -
-//   its transmit bursts can brown-out the ESP32 if sharing a weak supply.
+//   SIM800L needs a supply in its ~3.4-4.4V operating range - NOT the ESP32
+//   3.3V rail (too low/no current headroom) and NOT the ESP32 5V/VIN pin
+//   either (too high, and that pin can't source the ~2A TX-burst current
+//   anyway).
+//   If running off a single-cell Li-ion/LiPo (3.0-4.2V range): wire it
+//   DIRECTLY to the SIM800L's VCC/GND, no converter needed - that range
+//   already overlaps the module's spec, and a boost converter (e.g. MT3608)
+//   can't regulate below its own input, so trying to "boost" a 4.2V-charged
+//   cell down to a 4.0V setpoint just leaves it unregulated at the top of
+//   the charge curve. A buck converter is only needed if the supply is
+//   genuinely higher (e.g. 5V/USB); a boost converter is only needed if it's
+//   genuinely lower (e.g. 2xAA/NiMH, ~1.2-3V).
+//   Either way: a bulk cap (1000-3300uF) soldered right at the SIM800L's own
+//   VCC/GND pins, and a confirmed common GND with the ESP32, matter more than
+//   the exact regulator topology. "Modem not responding" at boot almost
+//   always traces back to one of these, not to the firmware.
 // Cancel button:       GPIO 4 -> button -> GND (internal pull-up, active LOW)
 // Buzzer:              GPIO 5 -> buzzer +, buzzer - -> GND
 // Battery sense:       GPIO 34 <- voltage divider midpoint (ADC1, input-only pin)
@@ -66,6 +80,15 @@ const unsigned long CALL_HOLD_MS = 30000;
 const char* const API_MDNS_NAME = "impactsense"; // resolves "impactsense.local"
 const uint16_t API_PORT = 8000;
 const char* const DEVICE_CODE = "IMP-001";
+
+// Manual fallback if mDNS never resolves on this network (some campus/enterprise
+// WiFi blocks multicast between clients - "AP client isolation" - which breaks
+// mDNS no matter how correctly it's configured on both ends). Leave "" to rely
+// on mDNS only. Otherwise set to the backend machine's current LAN IP (run
+// `ipconfig` on it, use the WiFi adapter's IPv4 address) as a last resort -
+// mDNS resolution is still retried in the background and will take over
+// automatically once/if it starts working.
+const char* const API_FALLBACK_IP = "10.68.249.203";
 
 // ===== GPS fallback coordinates =====
 // Used only until the NEO-6M gets a real satellite fix (or if it never does indoors).

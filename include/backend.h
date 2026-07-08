@@ -7,5 +7,6 @@
 
 String severityFromImpact(float totalAccel);
 bool reportCrash(float totalAccel, float totalGyro);
+void retryPendingCrashReport();
 bool reportHelmetStatus();
 bool fetchEmergencyContact(String &riderName, String &contactName, String &contactPhone);

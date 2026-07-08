@@ -48,6 +48,16 @@ IPAddress resolveApiHost() {
     Serial.printf("Resolved '%s.local' -> %s\n", API_MDNS_NAME, apiHostIp.toString().c_str());
   } else if (!haveAddress) {
     Serial.printf("mDNS lookup for '%s.local' failed (backend not up / no mDNS responder on that machine yet).\n", API_MDNS_NAME);
+
+    if (strlen(API_FALLBACK_IP) > 0) {
+      IPAddress fallback;
+      if (fallback.fromString(API_FALLBACK_IP)) {
+        apiHostIp = fallback;
+        Serial.printf("Using manual API_FALLBACK_IP from config.h: %s\n", apiHostIp.toString().c_str());
+      } else {
+        Serial.printf("API_FALLBACK_IP '%s' in config.h is not a valid IP.\n", API_FALLBACK_IP);
+      }
+    }
   }
 
   return apiHostIp;
