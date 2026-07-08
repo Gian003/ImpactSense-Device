@@ -50,7 +50,7 @@ const unsigned long CALL_HOLD_MS = 30000;
 
 // ===== Backend config =====
 // Must match a Helmet row in the DB (device_code) that is already paired to a rider.
-const char* const API_HOST = "192.168.1.2";
+const char* const API_HOST = "192.168.1.6";
 const uint16_t API_PORT = 8000;
 const char* const DEVICE_CODE = "IMP-001";
 
