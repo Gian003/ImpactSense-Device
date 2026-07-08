@@ -50,7 +50,20 @@ const unsigned long CALL_HOLD_MS = 30000;
 
 // ===== Backend config =====
 // Must match a Helmet row in the DB (device_code) that is already paired to a rider.
-const char* const API_HOST = "10.68.249.203";
+//
+// The backend machine's LAN IP changes every time it rejoins WiFi (DHCP), which
+// previously meant editing a hardcoded IP here and reflashing every session. Instead,
+// the firmware resolves this mDNS name to an IP at runtime (see connectivity.cpp:
+// resolveApiHost()) and re-resolves it periodically, so a new IP doesn't need a reflash.
+//
+// Requirements for this to work:
+//   - Backend machine must be running an mDNS responder that advertises this name
+//     (Bonjour/"Bonjour Print Services" on Windows, built-in on macOS, avahi on Linux),
+//     and Laravel must be served with `php artisan serve --host=0.0.0.0 --port=8000`
+//     (the default --host=127.0.0.1 rejects connections from other devices).
+//   - Only works over WiFi, not the GSM/GPRS fallback - mDNS is LAN-local, and a
+//     private dev backend IP was never reachable from cellular data anyway.
+const char* const API_MDNS_NAME = "impactsense"; // resolves "impactsense.local"
 const uint16_t API_PORT = 8000;
 const char* const DEVICE_CODE = "IMP-001";
 

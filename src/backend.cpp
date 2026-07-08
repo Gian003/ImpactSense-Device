@@ -12,7 +12,13 @@ static bool httpPostJson(const char* path, const String& jsonBody, int& statusOu
     return false;
   }
 
-  HttpClient http(*activeClient, API_HOST, API_PORT);
+  IPAddress host = resolveApiHost();
+  if (host == IPAddress((uint32_t)0)) {
+    Serial.println("Cannot reach backend: API host not resolved yet (mDNS lookup pending/failed).");
+    return false;
+  }
+
+  HttpClient http(*activeClient, host, API_PORT);
   http.setTimeout(10000);
 
   int err = http.post(path, "application/json", jsonBody);
@@ -31,7 +37,13 @@ static bool httpGetJson(const char* path, int& statusOut, String& bodyOut) {
     return false;
   }
 
-  HttpClient http(*activeClient, API_HOST, API_PORT);
+  IPAddress host = resolveApiHost();
+  if (host == IPAddress((uint32_t)0)) {
+    Serial.println("Cannot reach backend: API host not resolved yet (mDNS lookup pending/failed).");
+    return false;
+  }
+
+  HttpClient http(*activeClient, host, API_PORT);
   http.setTimeout(10000);
 
   int err = http.get(path);
@@ -103,7 +115,7 @@ bool reportHelmetStatus() {
 
   int status;
   String response;
-  if (!httpPostJson("/api/device/status", body, status, response)) {
+  if (!httpPostJson("/api/rider/helmet/status", body, status, response)) {
     Serial.println("Device status update failed: connection error.");
     return false;
   }

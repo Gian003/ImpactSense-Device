@@ -59,7 +59,7 @@ void loop() {
     Serial.println("normal");
   }
 
-  if (millis() - lastHelmetStatusAt > HELMET_STATUS_INTERVAL_MS) {
+  if (millis() - lastHelmetStatusAt > DEVICE_STATUS_INTERVAL_MS) {
     lastHelmetStatusAt = millis();
     reportHelmetStatus();
     refreshContactCache();
