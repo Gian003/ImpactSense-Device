@@ -89,7 +89,7 @@ bool reportCrash(float totalAccel, float totalGyro) {
 bool reportHelmetStatus() {
   ensureConnectivity();
   if (activeClient == nullptr) {
-    Serial.println("Skipping helmet status: no network connectivity.");
+    Serial.println("Skipping device status: no network connectivity.");
     return false;
   }
 
@@ -103,12 +103,12 @@ bool reportHelmetStatus() {
 
   int status;
   String response;
-  if (!httpPostJson("/api/rider/helmet/status", body, status, response)) {
-    Serial.println("Helmet status update failed: connection error.");
+  if (!httpPostJson("/api/device/status", body, status, response)) {
+    Serial.println("Device status update failed: connection error.");
     return false;
   }
 
-  Serial.printf("Helmet status HTTP %d: %s\n", status, response.c_str());
+  Serial.printf("Device status HTTP %d: %s\n", status, response.c_str());
   return status == 200;
 }
 

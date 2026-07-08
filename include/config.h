@@ -27,8 +27,8 @@ const int BATTERY_PIN = 34;
 // NOTE: "const char* const" (not just "const char*") is required here because this
 // header is included by multiple .cpp files - the trailing const gives each string
 // internal linkage, avoiding a "multiple definition" error at link time.
-const char* const WIFI_SSID     = "BIDA_dFDEEF";
-const char* const WIFI_PASSWORD = "tF2teH9s";
+const char* const WIFI_SSID     = "CITE TEC-301 2.4g";
+const char* const WIFI_PASSWORD = "2025ucucite";
 
 // ===== GSM/GPRS fallback config =====
 // TODO: confirm the correct APN for your SIM's carrier (e.g. Globe: "internet.globe.com.ph",
@@ -50,7 +50,7 @@ const unsigned long CALL_HOLD_MS = 30000;
 
 // ===== Backend config =====
 // Must match a Helmet row in the DB (device_code) that is already paired to a rider.
-const char* const API_HOST = "192.168.1.6";
+const char* const API_HOST = "10.68.249.203";
 const uint16_t API_PORT = 8000;
 const char* const DEVICE_CODE = "IMP-001";
 
@@ -89,5 +89,5 @@ const unsigned long CRASH_REPORT_COOLDOWN_MS = 10000;
 // How long the rider has to cancel a detected crash before it's reported.
 const unsigned long CRASH_CANCEL_WINDOW_MS = 30000;
 
-// How often to push a helmet status update (battery level) to the backend.
-const unsigned long HELMET_STATUS_INTERVAL_MS = 60000;
+// How often to push a device status update (battery level) to the backend.
+const unsigned long DEVICE_STATUS_INTERVAL_MS = 60000;
