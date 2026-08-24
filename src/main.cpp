@@ -7,9 +7,11 @@
 #include "backend.h"
 #include "crash_response.h"
 #include "contact_cache.h"
+#include "audio.h"
+#include "mic.h"
 
-unsigned long lastCrashReportAt = 0;
-unsigned long lastHelmetStatusAt = 0;
+unsigned long lastCrashReportAt     = 0;
+unsigned long lastHelmetStatusAt    = 0;
 unsigned long lastPrecautionAlertAt = 0;
 
 void setup() {
@@ -21,6 +23,8 @@ void setup() {
   sensorsInit();
   crashResponseInit();
   gpsInit();
+  audioInit();
+  micInit();
   modemInit();          // brings up SIM800 for SMS, independent of WiFi/GPRS
   contactCacheInit();   // loads last-known emergency contact from flash
   ensureConnectivity(); // tries WiFi first, falls back to GSM
@@ -30,15 +34,18 @@ void setup() {
 
   Serial.println("Setup complete. Monitoring for crashes...");
   Serial.println("total_accel_m_s2 , total_gyro_deg_s , status");
+
+  audioPlay(TRACK_STARTUP); // "ImpactSense helmet system is now active. Stay safe."
 }
 
 void loop() {
   pollGps();
+  checkManualSos(); // detects button held ≥ MANUAL_SOS_HOLD_MS outside a crash window
 
   float totalAccel, totalGyro;
   readCrashMetrics(totalAccel, totalGyro);
 
-  bool crashDetected = (totalAccel > ACCEL_THRESHOLD) && (totalGyro > GYRO_THRESHOLD);
+  bool crashDetected     = (totalAccel > ACCEL_THRESHOLD) && (totalGyro > GYRO_THRESHOLD);
   bool precautionDetected = (totalAccel > PRECAUTION_ACCEL_THRESHOLD) || (totalGyro > PRECAUTION_GYRO_THRESHOLD);
 
   Serial.print(totalAccel, 2);
@@ -46,9 +53,7 @@ void loop() {
   Serial.print(totalGyro, 2);
   Serial.print(" , ");
 
-  // Full crash takes priority - it's a strict superset of the precaution
-  // condition (higher thresholds, AND instead of OR), so this ordering just
-  // makes sure a real crash never gets treated as "merely a warning."
+  // Full crash takes priority — it's a strict superset of the precaution condition.
   if (crashDetected && (millis() - lastCrashReportAt > CRASH_REPORT_COOLDOWN_MS)) {
     lastCrashReportAt = millis();
     handleCrash(totalAccel, totalGyro);

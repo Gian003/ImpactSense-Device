@@ -69,6 +69,11 @@ IPAddress resolveApiHost() {
 // ever touched inside connectGSM(), which only runs when WiFi fails - meaning
 // SMS would silently never work on a device that has working WiFi.
 void modemInit() {
+  if (!SIM800L_ENABLED) {
+    Serial.println("SIM800L disabled in config.h - skipping modem init.");
+    return;
+  }
+
   Serial.println("Initializing SIM800 modem for SMS...");
   SerialGSM.begin(9600, SERIAL_8N1, GSM_RX_PIN, GSM_TX_PIN);
 
@@ -107,6 +112,10 @@ bool connectWiFi(unsigned long timeoutMs) {
 }
 
 bool connectGSM(unsigned long timeoutMs) {
+  if (!SIM800L_ENABLED) {
+    return false;
+  }
+
   // modemInit() already brought the modem up at boot; only (re-)wait for
   // network registration here if that hasn't succeeded yet.
   if (!modem.isNetworkConnected()) {
@@ -141,7 +150,7 @@ void ensureConnectivity() {
     return;
   }
 
-  if (modem.isGprsConnected() || connectGSM(20000)) {
+  if (SIM800L_ENABLED && (modem.isGprsConnected() || connectGSM(20000))) {
     currentNetwork = NET_GSM;
     activeClient = &gsmClient;
     return;
@@ -156,6 +165,11 @@ void ensureConnectivity() {
 // need GPRS/data or WiFi to be up, which is exactly why it's the fallback for
 // reaching someone when the rider or their phone may be unreachable.
 bool sendSms(const String &number, const String &message) {
+  if (!SIM800L_ENABLED) {
+    Serial.println("SIM800L disabled in config.h - skipping SMS.");
+    return false;
+  }
+
   if (number.length() == 0) {
     Serial.println("Cannot send SMS: no emergency contact cached yet.");
     return false;
@@ -169,29 +183,34 @@ bool sendSms(const String &number, const String &message) {
   return sent;
 }
 
-// Places a voice call - like SMS, this only needs cellular registration, not
-// GPRS/data. No audio is fed into the call yet (that needs the MIC/SPK analog
-// wiring and DFPlayer piece, a separate not-yet-built feature), so the call
-// connects silently. It still has value: it puts a live line open to a human
-// dispatcher and leaves this device's number in their call log.
-bool callEmergencyHotline(const String &number) {
+// Dials a number and returns immediately — does NOT block.
+// Call callEnd() when done. Audio can be played between callStart() and callEnd()
+// and will be transmitted through SIM800L MIC+ if DAC_R is wired to MIC+.
+bool callStart(const String &number) {
+  if (!SIM800L_ENABLED) {
+    Serial.println("SIM800L disabled in config.h - skipping emergency call.");
+    return false;
+  }
+
   if (!modem.isNetworkConnected()) {
     Serial.println("Cannot place emergency call: no cellular registration.");
     return false;
   }
 
-  Serial.printf("Placing emergency call to %s...\n", number.c_str());
-  bool connected = modem.callNumber(number);
+  Serial.printf("Dialling %s...\n", number.c_str());
+  bool dialled = modem.callNumber(number);
 
-  if (!connected) {
-    Serial.println("Emergency call failed to connect.");
+  if (!dialled) {
+    Serial.println("Emergency call failed to dial.");
     return false;
   }
 
-  Serial.printf("Emergency call connected. Holding for %lu seconds before hanging up.\n", CALL_HOLD_MS / 1000);
-  delay(CALL_HOLD_MS);
+  Serial.println("Call dialled. Waiting for answer...");
+  return true;
+}
 
+// Hangs up the active call.
+void callEnd() {
   modem.callHangup();
   Serial.println("Emergency call ended.");
-  return true;
 }

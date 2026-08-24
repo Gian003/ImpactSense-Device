@@ -18,7 +18,11 @@ bool connectWiFi(unsigned long timeoutMs);
 bool connectGSM(unsigned long timeoutMs);
 void ensureConnectivity();
 bool sendSms(const String &number, const String &message);
-bool callEmergencyHotline(const String &number);
+// callStart() dials and returns immediately (non-blocking).
+// Play DFPlayer audio between callStart() and callEnd() — it transmits through
+// SIM800L MIC+ when DAC_R (DFPlayer pin 4) is wired to MIC+ via 100 kΩ.
+bool callStart(const String &number);
+void callEnd();
 
 // Resolves API_MDNS_NAME (config.h) to an IP via mDNS, caching the result and
 // re-resolving periodically so a backend IP change doesn't need a reflash.

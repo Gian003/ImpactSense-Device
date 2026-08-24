@@ -8,8 +8,13 @@
 static Adafruit_MPU6050 mpu;
 
 void sensorsInit() {
-  // MPU6050 is on the I2C bus: SDA=GPIO21, SCL=GPIO22
+  // MPU6050 is on the I2C bus: SDA=GPIO21, SCL=GPIO22.
+  // 50 kHz is half the standard 100 kHz speed — this dramatically reduces
+  // I2C timeout errors (Wire Error 263) caused by long jumper wires or a noisy
+  // supply rail during WiFi TX bursts. Slower clock = longer bit times = more
+  // tolerance for signal degradation.
   Wire.begin(21, 22);
+  Wire.setClock(50000);
 
   if (!mpu.begin()) {
     Serial.println("ERROR: MPU6050 not found. Check wiring (SDA=21, SCL=22, VCC=3.3V, GND=GND).");
@@ -25,6 +30,13 @@ void sensorsInit() {
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 }
 
+// Last successfully validated reading — returned when the current read looks stale.
+static float sLastAccel = 9.81f;  // 1g at rest
+static float sLastGyro  = 0.0f;
+static float sPrevAccel = -1.0f;  // for duplicate detection
+static float sPrevGyro  = -1.0f;
+static uint8_t sDupCount = 0;
+
 void readCrashMetrics(float &totalAccel, float &totalGyro) {
   sensors_event_t accelEvent, gyroEvent, tempEvent;
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
@@ -33,13 +45,41 @@ void readCrashMetrics(float &totalAccel, float &totalGyro) {
   float ax = accelEvent.acceleration.x;
   float ay = accelEvent.acceleration.y;
   float az = accelEvent.acceleration.z;
-  totalAccel = sqrt(ax * ax + ay * ay + az * az);
+  float accel = sqrt(ax * ax + ay * ay + az * az);
 
   // Total rotation magnitude, converted from rad/s to deg/s.
   float gx = gyroEvent.gyro.x * 180.0 / PI;
   float gy = gyroEvent.gyro.y * 180.0 / PI;
   float gz = gyroEvent.gyro.z * 180.0 / PI;
-  totalGyro = sqrt(gx * gx + gy * gy + gz * gz);
+  float gyro = sqrt(gx * gx + gy * gy + gz * gz);
+
+  // Stale-data guard: when I2C fails mid-transfer, mpu.getEvent() leaves the
+  // event structs unchanged (the previous buffer contents). The giveaway is an
+  // exact floating-point match with the prior sample. Two identical consecutive
+  // readings above the precaution threshold are treated as stale and replaced
+  // with the last known-good values instead of triggering a false alert.
+  // (Two-reading window avoids false-flagging a genuine sustained impact.)
+  if (accel == sPrevAccel && gyro == sPrevGyro) {
+    sDupCount++;
+  } else {
+    sDupCount = 0;
+  }
+  sPrevAccel = accel;
+  sPrevGyro  = gyro;
+
+  bool looksStale = (sDupCount >= 2) &&
+                    (accel > PRECAUTION_ACCEL_THRESHOLD || gyro > PRECAUTION_GYRO_THRESHOLD);
+
+  if (looksStale) {
+    totalAccel = sLastAccel;
+    totalGyro  = sLastGyro;
+    return;
+  }
+
+  totalAccel  = accel;
+  totalGyro   = gyro;
+  sLastAccel  = accel;
+  sLastGyro   = gyro;
 }
 
 int readBatteryPercent() {
