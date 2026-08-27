@@ -45,13 +45,7 @@ static bool httpPostJson(const char* path, const String& jsonBody, int& statusOu
     return false;
   }
 
-  IPAddress host = resolveApiHost();
-  if (host == IPAddress((uint32_t)0)) {
-    Serial.println("Cannot reach backend: API host not resolved yet (mDNS lookup pending/failed).");
-    return false;
-  }
-
-  HttpClient http(*activeClient, host, API_PORT);
+  HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
   int err = http.post(path, "application/json", jsonBody);
@@ -70,13 +64,7 @@ static bool httpGetJson(const char* path, int& statusOut, String& bodyOut) {
     return false;
   }
 
-  IPAddress host = resolveApiHost();
-  if (host == IPAddress((uint32_t)0)) {
-    Serial.println("Cannot reach backend: API host not resolved yet (mDNS lookup pending/failed).");
-    return false;
-  }
-
-  HttpClient http(*activeClient, host, API_PORT);
+  HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
   int err = http.get(path);

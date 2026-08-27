@@ -74,32 +74,14 @@ const unsigned long CALL_CONNECT_WAIT_MS = 8000;
 const unsigned long CALL_HOLD_MS = 30000;
 
 // ===== Backend config =====
-// Must match a Helmet row in the DB (device_code) that is already paired to a rider.
+// Must match a Device row in the DB (device_code) that is already paired to a rider.
 //
-// The backend machine's LAN IP changes every time it rejoins WiFi (DHCP), which
-// previously meant editing a hardcoded IP here and reflashing every session. Instead,
-// the firmware resolves this mDNS name to an IP at runtime (see connectivity.cpp:
-// resolveApiHost()) and re-resolves it periodically, so a new IP doesn't need a reflash.
-//
-// Requirements for this to work:
-//   - Backend machine must be running an mDNS responder that advertises this name
-//     (Bonjour/"Bonjour Print Services" on Windows, built-in on macOS, avahi on Linux),
-//     and Laravel must be served with `php artisan serve --host=0.0.0.0 --port=8000`
-//     (the default --host=127.0.0.1 rejects connections from other devices).
-//   - Only works over WiFi, not the GSM/GPRS fallback - mDNS is LAN-local, and a
-//     private dev backend IP was never reachable from cellular data anyway.
-const char *const API_MDNS_NAME = "impactsense"; // resolves "impactsense.local"
-const uint16_t API_PORT = 8000;
+// The backend is exposed publicly via a Cloudflare Tunnel at impactsense.org.
+// The device connects over HTTPS (port 443) from any internet-connected WiFi —
+// no LAN mDNS needed, no hardcoded IPs that break when DHCP changes.
+const char *const API_PUBLIC_HOST = "impactsense.org";
+const uint16_t API_PORT = 443;
 const char *const DEVICE_CODE = "IMP-001";
-
-// Manual fallback if mDNS never resolves on this network (some campus/enterprise
-// WiFi blocks multicast between clients - "AP client isolation" - which breaks
-// mDNS no matter how correctly it's configured on both ends). Leave "" to rely
-// on mDNS only. Otherwise set to the backend machine's current LAN IP (run
-// `ipconfig` on it, use the WiFi adapter's IPv4 address) as a last resort -
-// mDNS resolution is still retried in the background and will take over
-// automatically once/if it starts working.
-const char *const API_FALLBACK_IP = "192.168.1.6";
 
 // ===== GPS fallback coordinates =====
 // Used only until the NEO-6M gets a real satellite fix (or if it never does indoors).

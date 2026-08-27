@@ -2,65 +2,21 @@
 #include "config.h"
 
 #include <WiFi.h>
-#include <ESPmDNS.h>
+#include <WiFiClientSecure.h>
 
 #define TINY_GSM_MODEM_SIM800
 #include <TinyGsmClient.h>
 
 static HardwareSerial SerialGSM(1);
 static TinyGsm modem(SerialGSM);
-static WiFiClient wifiClient;
+static WiFiClientSecure secureWifiClient;
 static TinyGsmClient gsmClient(modem);
 
 NetworkMode currentNetwork = NET_NONE;
 Client* activeClient = nullptr;
 
-static IPAddress apiHostIp((uint32_t)0);
-static bool mdnsStarted = false;
-static unsigned long lastMdnsResolveAt = 0;
-// Re-resolve periodically (not just once) since the whole point is picking up
-// a backend IP change without a reflash.
-static const unsigned long MDNS_RESOLVE_INTERVAL_MS = 5UL * 60UL * 1000UL;
-
-IPAddress resolveApiHost() {
-  // mDNS is LAN-local; on the GSM fallback there's no local backend to reach
-  // anyway (a private dev-machine IP was never reachable from cellular data).
-  if (currentNetwork != NET_WIFI) {
-    return apiHostIp;
-  }
-
-  if (!mdnsStarted) {
-    mdnsStarted = MDNS.begin("impactsense-device");
-    if (!mdnsStarted) {
-      Serial.println("mDNS init failed - cannot resolve backend hostname.");
-    }
-  }
-
-  bool haveAddress = apiHostIp != IPAddress((uint32_t)0);
-  if (haveAddress && millis() - lastMdnsResolveAt < MDNS_RESOLVE_INTERVAL_MS) {
-    return apiHostIp;
-  }
-
-  IPAddress found = MDNS.queryHost(API_MDNS_NAME, 3000);
-  if (found != IPAddress((uint32_t)0)) {
-    apiHostIp = found;
-    lastMdnsResolveAt = millis();
-    Serial.printf("Resolved '%s.local' -> %s\n", API_MDNS_NAME, apiHostIp.toString().c_str());
-  } else if (!haveAddress) {
-    Serial.printf("mDNS lookup for '%s.local' failed (backend not up / no mDNS responder on that machine yet).\n", API_MDNS_NAME);
-
-    if (strlen(API_FALLBACK_IP) > 0) {
-      IPAddress fallback;
-      if (fallback.fromString(API_FALLBACK_IP)) {
-        apiHostIp = fallback;
-        Serial.printf("Using manual API_FALLBACK_IP from config.h: %s\n", apiHostIp.toString().c_str());
-      } else {
-        Serial.printf("API_FALLBACK_IP '%s' in config.h is not a valid IP.\n", API_FALLBACK_IP);
-      }
-    }
-  }
-
-  return apiHostIp;
+const char* getApiHost() {
+  return API_PUBLIC_HOST;
 }
 
 // Brings the SIM800 modem up once at boot so SMS - which only needs cellular
@@ -140,19 +96,21 @@ bool connectGSM(unsigned long timeoutMs) {
 void ensureConnectivity() {
   if (WiFi.status() == WL_CONNECTED) {
     currentNetwork = NET_WIFI;
-    activeClient = &wifiClient;
+    secureWifiClient.setInsecure(); // skip certificate verification — Cloudflare Tunnel handles TLS
+    activeClient = &secureWifiClient;
     return;
   }
 
   if (connectWiFi(5000)) {
     currentNetwork = NET_WIFI;
-    activeClient = &wifiClient;
+    secureWifiClient.setInsecure();
+    activeClient = &secureWifiClient;
     return;
   }
 
   if (SIM800L_ENABLED && (modem.isGprsConnected() || connectGSM(20000))) {
     currentNetwork = NET_GSM;
-    activeClient = &gsmClient;
+    activeClient = &gsmClient; // GSM uses plain TinyGsmClient (no TLS wrapper available)
     return;
   }
 
