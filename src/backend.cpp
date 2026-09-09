@@ -168,7 +168,7 @@ bool reportHelmetStatus() {
 
   int status;
   String response;
-  if (!httpPostJson("/api/rider/helmet/status", body, status, response)) {
+  if (!httpPostJson("/api/rider/device/status", body, status, response)) {
     Serial.println("Device status update failed: connection error.");
     return false;
   }

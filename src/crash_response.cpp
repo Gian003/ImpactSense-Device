@@ -113,22 +113,37 @@ void handleCrash(float totalAccel, float totalGyro) {
   audioPlay(TRACK_REPORTING);
 
   // HTTP POST to backend (creates incident, triggers Pusher + Twilio).
-  // Non-fatal if internet is down — queued in NVS and retried later.
-  reportCrash(totalAccel, totalGyro);
+  // Returns true if the backend acknowledged the report (HTTP 201).
+  // Returns false if offline — queued in NVS flash and retried later.
+  bool backendReached = reportCrash(totalAccel, totalGyro);
 
-  // SMS to rider's emergency contact — cellular only, no internet needed.
+  // SMS to rider's emergency contact — always fires via SIM800L (GSM only,
+  // no internet needed) as a belt-and-suspenders channel regardless of
+  // whether the backend is reachable, since it goes to a different recipient
+  // (emergency contact) on a completely independent path.
   sendCrashSms(totalAccel);
 
   audioPlay(TRACK_REPORT_SENT);
 
-  // Voice call to TOC — dial, wait for answer, then transmit pre-recorded message.
-  // TRACK_CALL_TOC plays through the helmet speaker AND into the call via SIM800L MIC+
-  // (hardware: DFPlayer DAC_R pin 4 → 100 kΩ → SIM800L MIC+, SIM800L MIC− → GND).
-  if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
-    delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
-    audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
-    delay(CALL_HOLD_MS);          // hold line while message plays
-    callEnd();
+  // TOC voice call — two paths, one outcome:
+  //
+  //   Backend reachable → Twilio (server-side) already placed an AI voice
+  //   call to the emergency contact and the TOC dashboard lit up via Pusher.
+  //   No need for a second call from the device — skip it.
+  //
+  //   Backend unreachable → Twilio never fired. Fall back to the SIM800L
+  //   direct GSM call to the TOC hotline, playing the pre-recorded message
+  //   through the call (DFPlayer DAC_R → 100 kΩ → SIM800L MIC+).
+  if (!backendReached) {
+    Serial.println("Backend unreachable — falling back to SIM800L direct TOC call.");
+    if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
+      delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
+      audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
+      delay(CALL_HOLD_MS);          // hold line while message plays
+      callEnd();
+    }
+  } else {
+    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
   }
 }
 
@@ -144,15 +159,20 @@ static void triggerManualSos() {
   audioPlay(TRACK_MANUAL_SOS);
 
   // Treat as a "high"-severity crash so the backend creates a proper incident record.
-  reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
+  bool backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
   sendManualSosSms();
 
-  // Same call+audio sequence as a detected crash.
-  if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
-    delay(CALL_CONNECT_WAIT_MS);
-    audioPlay(TRACK_CALL_TOC);
-    delay(CALL_HOLD_MS);
-    callEnd();
+  // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
+  // SIM800L pre-recorded fallback if backend is unreachable.
+  if (!backendReached) {
+    if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
+      delay(CALL_CONNECT_WAIT_MS);
+      audioPlay(TRACK_CALL_TOC);
+      delay(CALL_HOLD_MS);
+      callEnd();
+    }
+  } else {
+    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
   }
 }
 

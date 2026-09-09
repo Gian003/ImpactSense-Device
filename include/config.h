@@ -59,7 +59,7 @@ const char *const GPRS_PASS = "";
 // actual AT communication so boot and crash-handling aren't stuck waiting on
 // timeouts against a dead modem while testing everything else. Flip back to
 // true once the module is properly powered and registering.
-const bool SIM800L_ENABLED = false;
+const bool SIM800L_ENABLED = true;
 
 // ===== Emergency voice call =====
 // TOC / dispatch number the device calls when a crash is confirmed.
@@ -121,8 +121,8 @@ const int MIC_PIN = 35;
 // deviation: how far the raw ADC value (0-4095) must be from midpoint (2048) to count as speech.
 // VOICE_SCORE_TARGET: score that must be accumulated before VAD confirms voice.
 // At 20 ms polling: +3 per voiced sample, -1 per silent sample → ~1.5 s of speech to confirm.
-const int MIC_VOICE_THRESHOLD = 350;
-const int VOICE_SCORE_TARGET = 60;
+const int MIC_VOICE_THRESHOLD = 700;
+const int VOICE_SCORE_TARGET = 200;
 
 // ===== Manual SOS =====
 // Hold the cancel button for this long outside a crash window to send SOS.

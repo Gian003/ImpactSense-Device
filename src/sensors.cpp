@@ -14,12 +14,26 @@ void sensorsInit() {
   // supply rail during WiFi TX bursts. Slower clock = longer bit times = more
   // tolerance for signal degradation.
   Wire.begin(21, 22);
-  Wire.setClock(50000);
+  Wire.setClock(20000); // 20 kHz — extra slow for long/noisy jumper wires
 
-  if (!mpu.begin()) {
-    Serial.println("ERROR: MPU6050 not found. Check wiring (SDA=21, SCL=22, VCC=3.3V, GND=GND).");
+  // Try default address 0x68 first (AD0 pin low), then 0x69 (AD0 pin high).
+  if (!mpu.begin(0x68) && !mpu.begin(0x69)) {
+    Serial.println("ERROR: MPU6050 not found on 0x68 or 0x69.");
+    Serial.println("Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.");
+    Serial.println("Most common fix: SDA and SCL wires are swapped.");
+
+    // I2C bus scan — shows which addresses actually respond
+    Serial.println("Scanning I2C bus...");
+    for (uint8_t addr = 1; addr < 127; addr++) {
+      Wire.beginTransmission(addr);
+      if (Wire.endTransmission() == 0) {
+        Serial.printf("  Found device at 0x%02X\n", addr);
+      }
+    }
+    Serial.println("Scan done. If nothing found, check wiring and power.");
+
     while (1) {
-      delay(1000); // halt here; nothing else can run without the sensor
+      delay(1000);
     }
   }
   Serial.println("MPU6050 found and initialized.");
@@ -67,10 +81,15 @@ void readCrashMetrics(float &totalAccel, float &totalGyro) {
   sPrevAccel = accel;
   sPrevGyro  = gyro;
 
+  // A reading below 2 m/s² is physically impossible for a stationary sensor —
+  // gravity alone contributes ~9.81. This means the I2C read failed silently
+  // and returned zeros. Treat it as invalid and keep the last good value.
+  bool tooLow = (accel < 2.0f);
+
   bool looksStale = (sDupCount >= 2) &&
                     (accel > PRECAUTION_ACCEL_THRESHOLD || gyro > PRECAUTION_GYRO_THRESHOLD);
 
-  if (looksStale) {
+  if (tooLow || looksStale) {
     totalAccel = sLastAccel;
     totalGyro  = sLastGyro;
     return;
