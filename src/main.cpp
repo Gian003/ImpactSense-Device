@@ -12,7 +12,7 @@
 #include "mic.h"
 
 unsigned long lastCrashReportAt     = 0;
-unsigned long lastHelmetStatusAt    = 0;
+unsigned long lastDeviceStatusAt    = 0;
 unsigned long lastPrecautionAlertAt = 0;
 
 void setup() {
@@ -36,7 +36,7 @@ void setup() {
   ensureConnectivity(); // tries WiFi first, falls back to GSM
   refreshContactCache(); // fetch a fresh copy now if connectivity is up
 
-  lastHelmetStatusAt = millis();
+  lastDeviceStatusAt = millis();
 
   Serial.println("Setup complete. Monitoring for crashes...");
 
@@ -138,10 +138,10 @@ void loop() {
     Serial.println("normal");
   }
 
-  if (millis() - lastHelmetStatusAt > DEVICE_STATUS_INTERVAL_MS) {
-    lastHelmetStatusAt = millis();
+  if (millis() - lastDeviceStatusAt > DEVICE_STATUS_INTERVAL_MS) {
+    lastDeviceStatusAt = millis();
     retryPendingCrashReport(); // flush any crash report that failed to send earlier
-    reportHelmetStatus();
+    reportDeviceStatus();
     refreshContactCache();
   }
 

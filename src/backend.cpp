@@ -101,7 +101,7 @@ bool reportCrash(float totalAccel, float totalGyro) {
 
   ensureConnectivity();
   if (activeClient == nullptr) {
-    Serial.println("Cannot report crash: no network connectivity. Queuing for retry.");
+    Serial.println("Cannot report crash: no data connection. Queuing for retry.");
     savePendingCrashReport(body);
     return false;
   }
@@ -152,10 +152,10 @@ void retryPendingCrashReport() {
   clearPendingCrashReport();
 }
 
-bool reportHelmetStatus() {
+bool reportDeviceStatus() {
   ensureConnectivity();
   if (activeClient == nullptr) {
-    Serial.println("Skipping device status: no network connectivity.");
+    Serial.println("Skipping device status: no data connection.");
     return false;
   }
 
@@ -163,6 +163,22 @@ bool reportHelmetStatus() {
   doc["device_code"]   = getDeviceCode();
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
+
+  // The backend writes a speed_reports row whenever all three of these are
+  // present (RiderDeviceController::updateStatus), which is what feeds "Speed
+  // Reports per Area" - so the heartbeat doubles as the speed telemetry and no
+  // second periodic call is needed.
+  //
+  // Only attached on a real fix. getLatitude()/getLongitude() fall back to the
+  // stub coordinates in config.h, and sending those would file a reading the
+  // device never actually took at a place it has never been, permanently, in a
+  // table meant for aggregation.
+  int speedKph = getSpeedKph();
+  if (hasGpsFix() && speedKph >= 0) {
+    doc["latitude"]  = getLatitude();
+    doc["longitude"] = getLongitude();
+    doc["speed_kph"] = speedKph;
+  }
 
   String body;
   serializeJson(doc, body);
@@ -181,7 +197,7 @@ bool reportHelmetStatus() {
 bool fetchEmergencyContact(String &riderName, String &contactName, String &contactPhone) {
   ensureConnectivity();
   if (activeClient == nullptr) {
-    Serial.println("Cannot fetch emergency contact: no network connectivity.");
+    Serial.println("Cannot fetch emergency contact: no data connection.");
     return false;
   }
 
