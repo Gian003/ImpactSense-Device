@@ -52,6 +52,25 @@ void deviceIdentityInit() {
 }
 
 void runProvisioningWindow() {
+  // In the field nobody is holding a serial cable, and this window is eight
+  // seconds of no crash detection on every single boot - including the reboot
+  // after a brownout, which is precisely when the rider is least able to
+  // afford it. So a deployed unit waits only long enough to notice that
+  // someone is actually there: plug in USB and hold a key through the reset
+  // and the full window opens as normal.
+  if (DEPLOYMENT_MODE) {
+    unsigned long probeStart = millis();
+    while (millis() - probeStart < PROVISION_PROBE_MS && !Serial.available()) {
+      delay(10);
+    }
+
+    if (!Serial.available()) {
+      Serial.println("[Provision] Deployment mode - window skipped (no serial input). "
+                     "Hold a key during reset to provision this unit.");
+      return;
+    }
+  }
+
   Serial.println();
   Serial.println("===============================================");
   Serial.println(" PROVISIONING MODE - waiting for a command...");

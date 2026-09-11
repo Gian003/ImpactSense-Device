@@ -11,6 +11,10 @@
 #include "audio.h"
 #include "mic.h"
 
+// DEPLOYMENT - STEP 3 (see deployment.h): uncomment with the watchdog blocks
+// in setup() and loop().
+// #include <esp_task_wdt.h>
+
 unsigned long lastCrashReportAt     = 0;
 unsigned long lastDeviceStatusAt    = 0;
 unsigned long lastPrecautionAlertAt = 0;
@@ -37,6 +41,18 @@ void setup() {
   refreshContactCache(); // fetch a fresh copy now if connectivity is up
 
   lastDeviceStatusAt = millis();
+
+  // DEPLOYMENT - STEP 3 (see deployment.h). Nothing currently recovers a unit
+  // whose I2C bus or modem has wedged, and from the backend a dead unit looks
+  // identical to one that simply has not crashed. 90 s, not the usual 5-10,
+  // because handleCrash() blocks on purpose for CALL_CONNECT_WAIT_MS +
+  // CALL_HOLD_MS + the HTTP timeout, and a shorter watchdog would reboot the
+  // device in the middle of the emergency call.
+  //
+  // if (DEPLOYMENT_MODE) {
+  //   esp_task_wdt_init(90, true); // panic + reboot on expiry
+  //   esp_task_wdt_add(NULL);      // watch the Arduino loop task
+  // }
 
   Serial.println("Setup complete. Monitoring for crashes...");
 
@@ -65,6 +81,9 @@ void setup() {
 }
 
 void loop() {
+  // DEPLOYMENT - STEP 3: pairs with esp_task_wdt_init() in setup().
+  // if (DEPLOYMENT_MODE) esp_task_wdt_reset();
+
   pollGps();
   checkManualSos(); // detects button held ≥ MANUAL_SOS_HOLD_MS outside a crash window
 
