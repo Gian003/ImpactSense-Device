@@ -10,7 +10,24 @@
 static HardwareSerial SerialGSM(1);
 static TinyGsm modem(SerialGSM);
 static WiFiClientSecure secureWifiClient;
+static WiFiClient plainWifiClient;
 static TinyGsmClient gsmClient(modem);
+
+// Which WiFi client HTTP should use, decided by the port rather than by a
+// second flag - a TLS client pointed at port 80 (or a plain one at 443) fails
+// in a way that looks like a network fault, and keeping the two in sync by
+// hand is exactly the kind of thing that gets missed when switching into
+// deployment mode. API_PORT is a compile-time constant, so this costs nothing
+// at runtime.
+static Client *wifiHttpClient()
+{
+  if (API_PORT == 443)
+  {
+    secureWifiClient.setInsecure(); // Cloudflare Tunnel terminates TLS; no cert store on-device
+    return &secureWifiClient;
+  }
+  return &plainWifiClient;
+}
 
 NetworkMode currentNetwork = NET_NONE;
 Client *activeClient = nullptr;
@@ -210,16 +227,14 @@ void ensureConnectivity()
   if (WiFi.status() == WL_CONNECTED)
   {
     currentNetwork = NET_WIFI;
-    secureWifiClient.setInsecure(); // skip certificate verification — Cloudflare Tunnel handles TLS
-    activeClient = &secureWifiClient;
+    activeClient = wifiHttpClient();
     return;
   }
 
   if (connectWiFi(5000))
   {
     currentNetwork = NET_WIFI;
-    secureWifiClient.setInsecure();
-    activeClient = &secureWifiClient;
+    activeClient = wifiHttpClient();
     return;
   }
 

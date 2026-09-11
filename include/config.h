@@ -2,6 +2,10 @@
 
 #include <Arduino.h>
 
+// DEPLOYMENT_MODE, plus the ordered runbook for taking a unit off the bench
+// and into the field. Several constants below derive from it.
+#include "deployment.h"
+
 // ===================================================================
 // PIN MAP - wire hardware to exactly these GPIOs
 // ===================================================================
@@ -88,9 +92,10 @@ const char *const GPRS_PASS = "";
 // signal than GPRS would) instead of an HTTP request. See handleCrash() in
 // crash_response.cpp.
 //
-// Flip to true only if the backend is ever also reachable over plain HTTP on
-// port 80 - then set API_PORT to 80 to match.
-const bool GSM_DATA_ENABLED = false;
+// Follows DEPLOYMENT_MODE, because it is only safe to enable together with
+// the port-80 switch below - and only after "Always Use HTTPS" is off in
+// Cloudflare. See STEP 1 in deployment.h; do not set this by hand.
+const bool GSM_DATA_ENABLED = DEPLOYMENT_MODE;
 
 // Development kill-switch: set to false while the SIM800L is unpowered/being
 // tuned (e.g. waiting on a multimeter to set the MT3608's output voltage).
@@ -117,7 +122,13 @@ const unsigned long CALL_HOLD_MS = 30000;
 // The device connects over HTTPS (port 443) from any internet-connected WiFi —
 // no LAN mDNS needed, no hardcoded IPs that break when DHCP changes.
 const char *const API_PUBLIC_HOST = "impactsense.org";
-const uint16_t API_PORT = 443;
+
+// 443 on the bench (WiFi, TLS). 80 in the field, because the SIM800L cannot
+// complete a TLS handshake against Cloudflare and WiFi will not be there -
+// see STEP 1 in deployment.h for the full reasoning and the Cloudflare-side
+// change this has to be paired with. connectivity.cpp picks a plain or TLS
+// WiFi client from this value, so the two never disagree.
+const uint16_t API_PORT = DEPLOYMENT_MODE ? 80 : 443;
 
 // ===== Device identity =====
 // device_code is deliberately NOT here. It is per-unit, so it lives in NVS
@@ -127,6 +138,13 @@ const uint16_t API_PORT = 443;
 // This is only how long the boot-time provisioning window listens on USB
 // serial before startup continues on its own.
 const unsigned long PROVISION_WINDOW_MS = 8000;
+
+// In deployment mode the full window is skipped unless someone is actually
+// typing: the device waits only this long to notice a keystroke. Eight seconds
+// of no crash detection on every boot is a bad trade in the field, especially
+// on the reboot after a brownout, when power is already marginal. Plug in USB
+// and hold a key during reset to open the full window on a deployed unit.
+const unsigned long PROVISION_PROBE_MS = 300;
 
 // ===== GPS fallback coordinates =====
 // Used only until the NEO-6M gets a real satellite fix (or if it never does indoors).
