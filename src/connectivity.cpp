@@ -175,12 +175,22 @@ bool connectGSM(unsigned long timeoutMs)
   // network registration here if that hasn't succeeded yet.
   if (!modem.isNetworkConnected())
   {
-    Serial.println("Attempting GSM/GPRS fallback...");
+    Serial.println("Attempting GSM fallback...");
     if (!modem.waitForNetwork(timeoutMs))
     {
       Serial.println("GSM network registration failed.");
       return false;
     }
+  }
+
+  // Registration alone is what SMS and voice calls need, and with
+  // GSM_DATA_ENABLED off those are the only things GSM carries - so stop
+  // here rather than spending ~20 s and prepaid data on a session no one
+  // will use. See the flag's note in config.h for why it is off.
+  if (!GSM_DATA_ENABLED)
+  {
+    Serial.println("GSM registered - SMS and voice available (GPRS data disabled in config.h).");
+    return true;
   }
 
   Serial.printf("Connecting to APN '%s'...\n", GPRS_APN);
@@ -216,7 +226,14 @@ void ensureConnectivity()
   if (SIM800L_ENABLED && (modem.isGprsConnected() || connectGSM(20000)))
   {
     currentNetwork = NET_GSM;
-    activeClient = &gsmClient; // GSM uses plain TinyGsmClient (no TLS wrapper available)
+
+    // NET_GSM means "the modem is registered", not "HTTP works". With
+    // GSM_DATA_ENABLED off, activeClient stays null on purpose: backend.cpp
+    // then fails fast and queues the report, rather than burning its 10 s
+    // timeout writing plaintext into an HTTPS port. Reaching this branch is
+    // still valuable - registration is exactly what sendSms() and callStart()
+    // need, and on the crash path those are what actually get help moving.
+    activeClient = GSM_DATA_ENABLED ? (Client *)&gsmClient : nullptr;
     return;
   }
 

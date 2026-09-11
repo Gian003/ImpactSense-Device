@@ -50,9 +50,11 @@ const int BUZZER_PIN = 5;
 const int BATTERY_PIN = 34;
 
 // ===== WiFi credentials =====
-// Device and backend must be on the SAME network. Backend is currently at 192.168.1.6
-// (home/lab WiFi). Update both SSID and PASSWORD to match whichever network you are
-// testing on, then re-flash.
+// Any network with a working internet connection will do - the backend is
+// reached through its public Cloudflare Tunnel hostname (see "Backend config"
+// below), not over the LAN, so the device and the machine running the backend
+// no longer have to be on the same WiFi. Update SSID and PASSWORD to whichever
+// network is being used, then re-flash.
 // NOTE: "const char* const" (not just "const char*") is required here because this
 // header is included by multiple .cpp files - the trailing const gives each string
 // internal linkage, avoiding a "multiple definition" error at link time.
@@ -65,6 +67,30 @@ const char *const WIFI_PASSWORD = "tF2teH9s"; // ← UPDATE if testing at home
 const char *const GPRS_APN = "internet.globe.com.ph";
 const char *const GPRS_USER = "";
 const char *const GPRS_PASS = "";
+
+// Whether to route HTTP traffic over GPRS when WiFi is unavailable.
+//
+// OFF, deliberately. The backend is HTTPS-only on port 443 (Cloudflare
+// Tunnel), and connectivity.cpp hands HTTP a plain TinyGsmClient with no TLS
+// layer - so over GPRS the device opens a raw socket to an HTTPS port, gets a
+// 400 back, and queues the report anyway. Turning it on costs ~30 s of
+// connect and timeout per attempt and achieves nothing.
+//
+// Wrapping it in TinyGsmClientSecure is not the fix either: most SIM800L
+// firmware revisions send no SNI - which Cloudflare requires, since one IP
+// serves many hostnames - the onboard SSL stack only offers old cipher
+// suites, and the CA chain would have to be loaded into the module's limited
+// cert store. Each of those alone is enough to fail the handshake.
+//
+// None of this weakens the crash path. GSM is still the fallback; it just
+// carries SMS and the voice call to the TOC hotline (both of which need only
+// cellular registration, never a data session, and work on a far weaker
+// signal than GPRS would) instead of an HTTP request. See handleCrash() in
+// crash_response.cpp.
+//
+// Flip to true only if the backend is ever also reachable over plain HTTP on
+// port 80 - then set API_PORT to 80 to match.
+const bool GSM_DATA_ENABLED = false;
 
 // Development kill-switch: set to false while the SIM800L is unpowered/being
 // tuned (e.g. waiting on a multimeter to set the MT3608's output voltage).
@@ -170,7 +196,8 @@ const unsigned long CRASH_REPORT_COOLDOWN_MS = 10000;
 // How long the rider has to cancel a detected crash before it's reported.
 const unsigned long CRASH_CANCEL_WINDOW_MS = 30000;
 
-// How often to push a device status update (battery level) to the backend.
+// How often to push a device status update (battery level, and a GPS speed
+// sample when there is a real fix) to the backend.
 const unsigned long DEVICE_STATUS_INTERVAL_MS = 60000;
 
 // ===== Serial telemetry =====

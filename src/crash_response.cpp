@@ -112,16 +112,23 @@ void handleCrash(float totalAccel, float totalGyro) {
   Serial.println("Cancellation window elapsed. Reporting crash...");
   audioPlay(TRACK_REPORTING);
 
+  // SMS to the rider's emergency contact — always fires via SIM800L (cellular
+  // registration only, no internet needed) as a belt-and-suspenders channel
+  // regardless of whether the backend is reachable, since it goes to a
+  // different recipient on a completely independent path.
+  //
+  // Sent BEFORE the HTTP report, not after. reportCrash() can sit for the best
+  // part of half a minute inside ensureConnectivity() — a 5 s WiFi retry, then
+  // cellular registration, then a 10 s HTTP timeout — and every one of those
+  // delays is longest in exactly the situation where the backend is going to
+  // fail anyway. Running the SMS afterwards put the most reliable channel on
+  // the crash path last and latest, gated behind the least reliable one.
+  sendCrashSms(totalAccel);
+
   // HTTP POST to backend (creates incident, triggers Pusher + Twilio).
   // Returns true if the backend acknowledged the report (HTTP 201).
   // Returns false if offline — queued in NVS flash and retried later.
   bool backendReached = reportCrash(totalAccel, totalGyro);
-
-  // SMS to rider's emergency contact — always fires via SIM800L (GSM only,
-  // no internet needed) as a belt-and-suspenders channel regardless of
-  // whether the backend is reachable, since it goes to a different recipient
-  // (emergency contact) on a completely independent path.
-  sendCrashSms(totalAccel);
 
   audioPlay(TRACK_REPORT_SENT);
 
@@ -158,9 +165,11 @@ static void triggerManualSos() {
   Serial.println("*** MANUAL SOS - button held for 3 seconds ***");
   audioPlay(TRACK_MANUAL_SOS);
 
+  // SMS first, for the same reason as handleCrash() — see the note there.
+  sendManualSosSms();
+
   // Treat as a "high"-severity crash so the backend creates a proper incident record.
   bool backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
-  sendManualSosSms();
 
   // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
   // SIM800L pre-recorded fallback if backend is unreachable.
