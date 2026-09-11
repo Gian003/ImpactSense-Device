@@ -1,0 +1,150 @@
+#include "device_identity.h"
+#include "config.h"
+
+#include <Preferences.h>
+
+static Preferences preferences;
+
+// Same namespace contact_cache.cpp uses. The keys differ (device_code/model/
+// firmware vs rider_name/ec_phone) so they coexist, and sharing it means a
+// unit already provisioned by the older .ino firmware keeps its identity.
+static const char *NVS_NAMESPACE = "impactsense";
+
+// Deliberately not a real code. A brand-new unit that has never been
+// provisioned should fail loudly against the backend ("Device not
+// registered") rather than quietly impersonate whatever code happened to be
+// hardcoded in the build.
+static const char *UNPROVISIONED = "UNPROVISIONED";
+
+static String deviceCode;
+static String deviceModel;
+static String firmwareVersion;
+
+static void saveDeviceIdentity(const String &code, const String &model, const String &firmware) {
+  preferences.begin(NVS_NAMESPACE, false); // read-write
+  preferences.putString("device_code", code);
+  preferences.putString("model", model);
+  preferences.putString("firmware", firmware);
+  preferences.end();
+}
+
+static void printDeviceIdentity() {
+  Serial.println("-- Current device identity --");
+  Serial.printf("  device_code      : %s\n", deviceCode.c_str());
+  Serial.printf("  model            : %s\n", deviceModel.length() ? deviceModel.c_str() : "(not set)");
+  Serial.printf("  firmware_version : %s\n", firmwareVersion.length() ? firmwareVersion.c_str() : "(not set)");
+}
+
+void deviceIdentityInit() {
+  preferences.begin(NVS_NAMESPACE, true); // read-only
+  deviceCode      = preferences.getString("device_code", UNPROVISIONED);
+  deviceModel     = preferences.getString("model", "");
+  firmwareVersion = preferences.getString("firmware", "");
+  preferences.end();
+
+  if (deviceCode == UNPROVISIONED) {
+    // Without this, an unprovisioned unit looks like a network fault: every
+    // backend call fails with "Device not registered" and nothing on the
+    // serial log says why.
+    Serial.println("WARNING: this unit has no device_code yet. Backend calls "
+                   "will be rejected until it is provisioned - use SET below.");
+  }
+}
+
+void runProvisioningWindow() {
+  Serial.println();
+  Serial.println("===============================================");
+  Serial.println(" PROVISIONING MODE - waiting for a command...");
+  Serial.println(" Type:  SET <device_code>,<model>,<firmware>");
+  Serial.println("   or:  SHOW");
+  Serial.println(" then press Enter. Full instructions are in");
+  Serial.println(" include/device_identity.h. No input needed to");
+  Serial.println(" skip - the device boots normally on its own.");
+  Serial.println("===============================================");
+  printDeviceIdentity();
+
+  String line;
+  unsigned long start = millis();
+
+  // Only runs right after power-on/reset. Once this returns, typing on serial
+  // no longer reconfigures anything, so a unit already in the field cannot be
+  // silently reprovisioned without someone physically holding it, plugging in
+  // USB, and resetting it on purpose.
+  while (millis() - start < PROVISION_WINDOW_MS) {
+    while (Serial.available()) {
+      char c = Serial.read();
+
+      if (c != '\n' && c != '\r') {
+        line += c;
+        continue;
+      }
+
+      line.trim();
+      if (line.length() == 0) {
+        line = "";
+        continue;
+      }
+
+      if (line.equalsIgnoreCase("SHOW")) {
+        printDeviceIdentity();
+
+      } else if (line.length() >= 4 && (line.startsWith("SET ") || line.startsWith("set "))) {
+        String rest = line.substring(4);
+        rest.trim();
+
+        // "code,model,firmware" - model and firmware are optional, so only
+        // split on the commas that are actually there.
+        int c1 = rest.indexOf(',');
+        int c2 = (c1 == -1) ? -1 : rest.indexOf(',', c1 + 1);
+
+        String code, model, firmware;
+        if (c1 == -1) {
+          code = rest;
+        } else if (c2 == -1) {
+          code  = rest.substring(0, c1);
+          model = rest.substring(c1 + 1);
+        } else {
+          code     = rest.substring(0, c1);
+          model    = rest.substring(c1 + 1, c2);
+          firmware = rest.substring(c2 + 1);
+        }
+        code.trim();
+        model.trim();
+        firmware.trim();
+
+        if (code.length() == 0) {
+          Serial.println("[Provision] device_code can't be blank - try again, e.g. SET IMP-042");
+        } else {
+          saveDeviceIdentity(code, model, firmware);
+          deviceCode      = code;
+          deviceModel     = model;
+          firmwareVersion = firmware;
+          Serial.println("[Provision] Saved.");
+          printDeviceIdentity();
+          Serial.println("[Provision] Still listening - reset the device (or wait for the "
+                         "window to close) to start normal operation with this identity.");
+        }
+
+      } else {
+        Serial.println("[Provision] Not recognized. Use:  SET <device_code>,<model>,<firmware>   or   SHOW");
+      }
+
+      line = "";
+    }
+  }
+
+  Serial.println("[Provision] Window closed - continuing startup with the identity above.");
+  Serial.println();
+}
+
+String getDeviceCode() {
+  return deviceCode;
+}
+
+String getDeviceModel() {
+  return deviceModel;
+}
+
+String getFirmwareVersion() {
+  return firmwareVersion;
+}

@@ -1,6 +1,7 @@
 #include "backend.h"
 #include "config.h"
 #include "connectivity.h"
+#include "device_identity.h"
 #include "gps.h"
 #include "sensors.h"
 
@@ -89,7 +90,7 @@ String severityFromImpact(float totalAccel) {
 
 bool reportCrash(float totalAccel, float totalGyro) {
   JsonDocument doc;
-  doc["device_code"] = DEVICE_CODE;
+  doc["device_code"] = getDeviceCode();
   doc["latitude"]    = getLatitude();
   doc["longitude"]   = getLongitude();
   doc["type"]        = "collision";
@@ -159,7 +160,7 @@ bool reportHelmetStatus() {
   }
 
   JsonDocument doc;
-  doc["device_code"]   = DEVICE_CODE;
+  doc["device_code"]   = getDeviceCode();
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
 
@@ -184,7 +185,7 @@ bool fetchEmergencyContact(String &riderName, String &contactName, String &conta
     return false;
   }
 
-  String path = String("/api/device/emergency-contact?device_code=") + DEVICE_CODE;
+  String path = String("/api/device/emergency-contact?device_code=") + getDeviceCode();
 
   int status;
   String body;

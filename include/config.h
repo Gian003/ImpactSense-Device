@@ -87,14 +87,20 @@ const unsigned long CALL_CONNECT_WAIT_MS = 8000;
 const unsigned long CALL_HOLD_MS = 30000;
 
 // ===== Backend config =====
-// Must match a Device row in the DB (device_code) that is already paired to a rider.
-//
 // The backend is exposed publicly via a Cloudflare Tunnel at impactsense.org.
 // The device connects over HTTPS (port 443) from any internet-connected WiFi —
 // no LAN mDNS needed, no hardcoded IPs that break when DHCP changes.
 const char *const API_PUBLIC_HOST = "impactsense.org";
 const uint16_t API_PORT = 443;
-const char *const DEVICE_CODE = "IMP-001";
+
+// ===== Device identity =====
+// device_code is deliberately NOT here. It is per-unit, so it lives in NVS
+// instead and one firmware image serves every device — see
+// include/device_identity.h for how to set it on a unit.
+//
+// This is only how long the boot-time provisioning window listens on USB
+// serial before startup continues on its own.
+const unsigned long PROVISION_WINDOW_MS = 8000;
 
 // ===== GPS fallback coordinates =====
 // Used only until the NEO-6M gets a real satellite fix (or if it never does indoors).

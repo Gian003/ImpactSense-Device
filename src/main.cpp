@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "config.h"
+#include "device_identity.h"
 #include "sensors.h"
 #include "gps.h"
 #include "connectivity.h"
@@ -19,6 +20,11 @@ void setup() {
   delay(500); // give Serial Monitor time to attach after upload
   Serial.println();
   Serial.println("ImpactSense - Full Firmware (Modules 1-7)");
+
+  // First, before anything reaches the backend: this unit has to know which
+  // device_code it is, and boot is the only point where that can be changed.
+  deviceIdentityInit();
+  runProvisioningWindow();
 
   sensorsInit();
   crashResponseInit();
