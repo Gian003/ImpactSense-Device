@@ -32,6 +32,19 @@ const int GPS_RX_PIN = 16;
 const int GPS_TX_PIN = 17;
 const int GSM_RX_PIN = 26;
 const int GSM_TX_PIN = 27;
+
+// Serial rate for the SIM800L link.
+//
+// The module leaves the factory in autobaud mode, and whatever rate it last
+// locked onto is what it keeps using. Autobaud detection is far more reliable
+// at 9600 than at 115200 - which is what modemInit() used to open the port at,
+// unconditionally. If the module had settled on 9600, every AT command was
+// being sent at a rate it could not read, which looks exactly like a dead
+// modem.
+//
+// modemInit() probes the rates below when this one does not answer, and prints
+// whichever one works so it can be set here permanently.
+const uint32_t GSM_BAUD = 9600;
 const int CANCEL_BUTTON_PIN = 4;
 const int BUZZER_PIN = 5;
 const int BATTERY_PIN = 34;
@@ -153,3 +166,13 @@ const unsigned long CRASH_CANCEL_WINDOW_MS = 30000;
 
 // How often to push a device status update (battery level) to the backend.
 const unsigned long DEVICE_STATUS_INTERVAL_MS = 60000;
+
+// ===== Serial telemetry =====
+// The loop used to print "9.81 , 0.42 , normal" ten times a second: three bare
+// numbers with no units, no axes and nothing to compare them against.
+//
+// TELEMETRY_LABELLED prints a readable block instead, on the interval below.
+// Set it to false to get the old comma-separated line back - that format is
+// what the Arduino Serial Plotter expects, so keep it if you are graphing.
+const bool          TELEMETRY_LABELLED    = true;
+const unsigned long TELEMETRY_INTERVAL_MS = 1500;

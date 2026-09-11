@@ -20,6 +20,36 @@ const char *getApiHost()
   return API_PUBLIC_HOST;
 }
 
+// Finds the rate the modem is actually listening at.
+//
+// SIM800L ships in autobaud mode and keeps whichever rate it last locked onto,
+// so a module that settled on 9600 is deaf to a port opened at 115200. An
+// autobauding module also needs to see a few ATs before it syncs, hence the
+// repeats rather than a single attempt per rate.
+//
+// Returns the working rate, or 0 if nothing answered at any of them.
+static uint32_t detectModemBaud()
+{
+  static const uint32_t candidates[] = {GSM_BAUD, 9600, 115200, 57600, 38400, 19200, 4800};
+
+  for (uint32_t baud : candidates)
+  {
+    SerialGSM.end();
+    SerialGSM.begin(baud, SERIAL_8N1, GSM_RX_PIN, GSM_TX_PIN);
+    delay(200);
+
+    for (int attempt = 0; attempt < 3; attempt++)
+    {
+      if (modem.testAT(800))
+      {
+        return baud;
+      }
+    }
+  }
+
+  return 0;
+}
+
 // Brings the SIM800 modem up once at boot so SMS - which only needs cellular
 // registration, not an active GPRS/data session - works regardless of whether
 // WiFi or GPRS ends up carrying HTTP traffic. Without this, the modem was only
@@ -34,23 +64,81 @@ void modemInit()
   }
 
   Serial.println("Initializing SIM800 modem for SMS...");
-  SerialGSM.begin(115200, SERIAL_8N1, GSM_RX_PIN, GSM_TX_PIN);
-  delay(1000); // allow modem to settle before first AT command
 
+  // A SIM800L takes several seconds from power-up before it answers AT at all.
+  // The previous 1000ms was inside that window, so a perfectly healthy module
+  // could be written off before it had finished booting.
+  SerialGSM.begin(GSM_BAUD, SERIAL_8N1, GSM_RX_PIN, GSM_TX_PIN);
+  delay(3000);
+
+  // Probe before restarting. restart() issues AT+CFUN=1,1, which reboots the
+  // radio and pulls peak current; if the real problem is that we are talking
+  // at the wrong baud rate, that reboot fails for a reason that has nothing to
+  // do with the modem's health, and the old code reported exactly that.
+  uint32_t baud = detectModemBaud();
+
+  if (baud == 0)
+  {
+    Serial.println("SIM800 modem not responding at any baud rate.");
+    Serial.println("  This is a wiring or power fault, not a SIM or load problem:");
+    Serial.println("  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)");
+    Serial.println("  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts");
+    Serial.println("  - grounds tied together, and a 1000uF+ cap at the module");
+    Serial.println("  - status LED blinking; solid or dark means it is not running");
+    return;
+  }
+
+  if (baud != GSM_BAUD)
+  {
+    Serial.printf("Modem answered at %lu baud, not the configured %lu.\n",
+                  (unsigned long)baud, (unsigned long)GSM_BAUD);
+    Serial.printf("  Set GSM_BAUD = %lu in config.h to skip this probe next boot.\n",
+                  (unsigned long)baud);
+  }
+  else
+  {
+    Serial.printf("Modem answered at %lu baud.\n", (unsigned long)baud);
+  }
+
+  // Now that we know the link works, a failed restart means something real.
   if (!modem.restart())
   {
-    Serial.println("SIM800 modem not responding. SMS will be unavailable until it is.");
+    Serial.println("Modem is talking but would not restart - usually an undersized supply.");
+    Serial.println("  Trying a plain init instead...");
+    if (!modem.init())
+    {
+      Serial.println("SIM800 modem not responding. SMS will be unavailable until it is.");
+      return;
+    }
+  }
+
+  // Separating these tells you which half is wrong. A locked or absent SIM and
+  // a weak signal need completely different fixes, and both used to surface as
+  // the same "registration failed" line.
+  SimStatus sim = modem.getSimStatus();
+  if (sim != SIM_READY)
+  {
+    Serial.printf("SIM not ready (status %d) - absent, badly seated, or PIN-locked.\n",
+                  (int)sim);
+    Serial.println("  Put the SIM in a phone and switch the PIN off, then retry.");
     return;
   }
 
   Serial.print("Waiting for cellular network (for SMS)...");
   if (!modem.waitForNetwork(20000))
   {
-    Serial.println("GSM network registration failed. SMS will be unavailable until signal improves.");
+    Serial.println();
+    int16_t csq = modem.getSignalQuality();
+    Serial.printf("GSM registration failed. Signal quality %d/31%s\n", csq,
+                  (csq == 99 || csq == 0) ? " - check the antenna" : "");
+    Serial.println("  SIM800L is 2G only; confirm 2G is still available here.");
     return;
   }
+  Serial.println(" done.");
 
-  Serial.println("SIM800 modem ready (registered on cellular network).");
+  int16_t csq = modem.getSignalQuality();
+  Serial.printf("SIM800 modem ready (registered, signal %d/31%s).\n", csq,
+                csq < 10 ? " - marginal, SMS may fail" : "");
 }
 
 bool connectWiFi(unsigned long timeoutMs)

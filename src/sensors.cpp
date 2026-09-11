@@ -51,7 +51,7 @@ static float sPrevAccel = -1.0f;  // for duplicate detection
 static float sPrevGyro  = -1.0f;
 static uint8_t sDupCount = 0;
 
-void readCrashMetrics(float &totalAccel, float &totalGyro) {
+void readMotion(MotionReading &out) {
   sensors_event_t accelEvent, gyroEvent, tempEvent;
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
 
@@ -66,6 +66,11 @@ void readCrashMetrics(float &totalAccel, float &totalGyro) {
   float gy = gyroEvent.gyro.y * 180.0 / PI;
   float gz = gyroEvent.gyro.z * 180.0 / PI;
   float gyro = sqrt(gx * gx + gy * gy + gz * gz);
+
+  out.ax = ax;  out.ay = ay;  out.az = az;
+  out.gx = gx;  out.gy = gy;  out.gz = gz;
+  out.tempC = tempEvent.temperature;
+  out.substituted = false;
 
   // Stale-data guard: when I2C fails mid-transfer, mpu.getEvent() leaves the
   // event structs unchanged (the previous buffer contents). The giveaway is an
@@ -90,15 +95,25 @@ void readCrashMetrics(float &totalAccel, float &totalGyro) {
                     (accel > PRECAUTION_ACCEL_THRESHOLD || gyro > PRECAUTION_GYRO_THRESHOLD);
 
   if (tooLow || looksStale) {
-    totalAccel = sLastAccel;
-    totalGyro  = sLastGyro;
+    out.totalAccel  = sLastAccel;
+    out.totalGyro   = sLastGyro;
+    out.substituted = true;
     return;
   }
 
-  totalAccel  = accel;
-  totalGyro   = gyro;
-  sLastAccel  = accel;
-  sLastGyro   = gyro;
+  out.totalAccel = accel;
+  out.totalGyro  = gyro;
+  sLastAccel     = accel;
+  sLastGyro      = gyro;
+}
+
+// Kept so nothing that only wants the two magnitudes has to know about the
+// struct.
+void readCrashMetrics(float &totalAccel, float &totalGyro) {
+  MotionReading m;
+  readMotion(m);
+  totalAccel = m.totalAccel;
+  totalGyro  = m.totalGyro;
 }
 
 int readBatteryPercent() {
