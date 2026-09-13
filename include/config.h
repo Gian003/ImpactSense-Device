@@ -259,6 +259,45 @@ const unsigned long CRASH_CANCEL_WINDOW_MS = 30000;
 // sample when there is a real fix) to the backend.
 const unsigned long DEVICE_STATUS_INTERVAL_MS = 60000;
 
+// ===== Idle power state =====
+// See power_state.h for what idle does and, more importantly, what it refuses
+// to do. Short version: it never slows the sampling loop, so crash detection
+// is identical in both states.
+//
+// How long the device must be continuously still before idling. Two minutes
+// rather than seconds: a rider waiting at a long light should not be cycling
+// in and out of idle, and the saving from idling those extra seconds is
+// nothing next to the churn.
+const unsigned long IDLE_ENTER_MS = 120000;
+
+// What counts as "still", measured over one-second buckets. A helmet resting
+// on a table varies by only a few hundredths of a m/s^2; a helmet on a bike
+// idling at a light varies by far more than this band even before the bike
+// moves, because the engine is running. Widen STILL_ACCEL_BAND if a genuinely
+// parked device never reaches idle.
+const float STILL_ACCEL_BAND = 0.35; // m/s^2 peak-to-peak within one second
+const float STILL_GYRO_MAX   = 8.0;  // deg/s
+
+// What ends idle, checked every sample. Deliberately far below the precaution
+// thresholds - this only has to mean "something moved", and being too eager
+// here costs a little power while being too slow costs readiness.
+const float WAKE_ACCEL_DELTA = 1.5;  // m/s^2 away from 1 g
+const float WAKE_GYRO        = 25.0; // deg/s
+
+// Heartbeat interval while idle. The device is stationary, so the position and
+// battery it would report have barely changed - and this is the one saving
+// that actually matters, because it is the modem transmitting.
+const unsigned long IDLE_STATUS_INTERVAL_MS = 300000; // 5 min
+
+// CPU frequency scaling. 80 MHz is the floor that still supports the radio,
+// and is far more than the loop needs. Set IDLE_CPU_SCALING false if the GPS
+// or SIM800L link misbehaves after an idle transition - the Arduino core is
+// supposed to re-derive UART dividers on the switch, and this is the first
+// thing to rule out if it does not.
+const bool     IDLE_CPU_SCALING = true;
+const uint32_t IDLE_CPU_MHZ     = 80;
+const uint32_t ACTIVE_CPU_MHZ   = 240;
+
 // ===== Serial telemetry =====
 // The loop used to print "9.81 , 0.42 , normal" ten times a second: three bare
 // numbers with no units, no axes and nothing to compare them against.
