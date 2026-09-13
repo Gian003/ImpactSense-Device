@@ -299,11 +299,28 @@ const uint32_t IDLE_CPU_MHZ     = 80;
 const uint32_t ACTIVE_CPU_MHZ   = 240;
 
 // ===== Serial telemetry =====
-// The loop used to print "9.81 , 0.42 , normal" ten times a second: three bare
-// numbers with no units, no axes and nothing to compare them against.
+// The monitor has two audiences that want opposite things, so there are three
+// formats rather than one compromise. Switch with TELEMETRY_MODE below.
 //
-// TELEMETRY_LABELLED prints a readable block instead, on the interval below.
-// Set it to false to get the old comma-separated line back - that format is
-// what the Arduino Serial Plotter expects, so keep it if you are graphing.
-const bool          TELEMETRY_LABELLED    = true;
-const unsigned long TELEMETRY_INTERVAL_MS = 1500;
+//   TELEMETRY_DEMO      For showing the device to people who are not reading
+//                       the source: panel, adviser, PNP. Names the state in
+//                       words, and draws how close the readings are to the
+//                       crash level as bars, because "31% of crash level"
+//                       lands instantly and "|mag| 7.8 m/s2" does not.
+//
+//   TELEMETRY_DETAILED  Per-axis figures, peaks between prints, I2C health.
+//                       What you want when tuning ACCEL_THRESHOLD or chasing
+//                       a wiring fault. This was the previous default.
+//
+//   TELEMETRY_PLOTTER   Bare "9.81 , 0.42 , normal" CSV, which is the format
+//                       the Arduino Serial Plotter graphs.
+//
+// All three print the same >> event lines, so the story of a crash reads the
+// same way whichever one is selected.
+enum TelemetryMode { TELEMETRY_DEMO, TELEMETRY_DETAILED, TELEMETRY_PLOTTER };
+const TelemetryMode TELEMETRY_MODE = TELEMETRY_DEMO;
+
+// How often the block refreshes. 1.5 s suits tuning; 2-3 s reads more calmly
+// in a demo, where a panel scrolling too fast is harder to follow than one
+// that updates a little behind the action.
+const unsigned long TELEMETRY_INTERVAL_MS = 2000;

@@ -6,6 +6,7 @@
 #include "contact_cache.h"
 #include "audio.h"
 #include "mic.h"
+#include "telemetry.h"
 
 #include <Arduino.h>
 
@@ -77,7 +78,8 @@ static void sendManualSosSms() {
 // sustained pattern so the rider can tell "just a warning" from "emergency in
 // progress" without looking at anything.
 void handlePrecautionAlert() {
-  Serial.println("*** PRECAUTION ALERT - abnormal balance/speed detected ***");
+  telemetryEvent("PRECAUTION - unstable riding detected. Warning the rider.");
+  telemetryDetail("Below crash level, so nothing is reported. Buzzer only.");
 
   // 100 ms is enough for a piezo, which is effectively instant, but an ERM
   // spends the first ~50 ms of that just getting up to speed and would be
@@ -99,9 +101,12 @@ void handlePrecautionAlert() {
 // ── crash response ────────────────────────────────────────────────────────────
 
 void handleCrash(float totalAccel, float totalGyro) {
-  Serial.println("*** CRASH DETECTED - cancellation window started ***");
-  Serial.printf("Press the cancel button within %lu seconds, or speak to cancel.\n",
-                CRASH_CANCEL_WINDOW_MS / 1000);
+  char line[96];
+  telemetryEvent("CRASH DETECTED");
+  snprintf(line, sizeof(line),
+           "Rider has %lu seconds to cancel - press the button, or just speak.",
+           CRASH_CANCEL_WINDOW_MS / 1000);
+  telemetryDetail(line);
 
   audioPlay(TRACK_CRASH_DETECTED);
   resetVoiceScore(); // start fresh so a previous event's score doesn't carry over
@@ -132,16 +137,18 @@ void handleCrash(float totalAccel, float totalGyro) {
 
   if (cancelled) {
     if (voiceCancelled) {
-      Serial.println("Crash report CANCELLED — voice activity detected (rider is conscious).");
+      telemetryEvent("CANCELLED - the rider spoke, so they are conscious.");
+      telemetryDetail("Nothing reported. No SMS, no call, no incident record.");
       audioPlay(TRACK_VOICE_CANCEL);
     } else {
-      Serial.println("Crash report CANCELLED — button pressed by rider.");
+      telemetryEvent("CANCELLED - the rider pressed the button.");
+      telemetryDetail("Nothing reported. No SMS, no call, no incident record.");
       audioPlay(TRACK_CANCELLED);
     }
     return;
   }
 
-  Serial.println("Cancellation window elapsed. Reporting crash...");
+  telemetryEvent("NO RESPONSE from the rider - treating this as a real crash.");
   audioPlay(TRACK_REPORTING);
 
   // SMS to the rider's emergency contact — always fires via SIM800L (cellular
@@ -155,11 +162,13 @@ void handleCrash(float totalAccel, float totalGyro) {
   // delays is longest in exactly the situation where the backend is going to
   // fail anyway. Running the SMS afterwards put the most reliable channel on
   // the crash path last and latest, gated behind the least reliable one.
+  telemetryDetail("1. Texting the emergency contact...");
   sendCrashSms(totalAccel);
 
   // HTTP POST to backend (creates incident, triggers Pusher + Twilio).
   // Returns true if the backend acknowledged the report (HTTP 201).
   // Returns false if offline — queued in NVS flash and retried later.
+  telemetryDetail("2. Reporting to the command centre...");
   bool backendReached = reportCrash(totalAccel, totalGyro);
 
   audioPlay(TRACK_REPORT_SENT);
@@ -174,7 +183,7 @@ void handleCrash(float totalAccel, float totalGyro) {
   //   direct GSM call to the TOC hotline, playing the pre-recorded message
   //   through the call (DFPlayer DAC_R → 100 kΩ → SIM800L MIC+).
   if (!backendReached) {
-    Serial.println("Backend unreachable — falling back to SIM800L direct TOC call.");
+    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
       audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
@@ -182,8 +191,10 @@ void handleCrash(float totalAccel, float totalGyro) {
       callEnd();
     }
   } else {
-    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
+    telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
   }
+
+  telemetryEvent("Response complete. Back to monitoring.");
 }
 
 // ── manual SOS ────────────────────────────────────────────────────────────────
@@ -194,18 +205,22 @@ static unsigned long gSosPressStart = 0;
 static bool          gSosButtonHeld = false;
 
 static void triggerManualSos() {
-  Serial.println("*** MANUAL SOS - button held for 3 seconds ***");
+  telemetryEvent("MANUAL SOS - the rider held the button down.");
+  telemetryDetail("No cancellation window: this was deliberate.");
   audioPlay(TRACK_MANUAL_SOS);
 
   // SMS first, for the same reason as handleCrash() — see the note there.
+  telemetryDetail("1. Texting the emergency contact...");
   sendManualSosSms();
 
   // Treat as a "high"-severity crash so the backend creates a proper incident record.
+  telemetryDetail("2. Reporting to the command centre...");
   bool backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
 
   // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
   // SIM800L pre-recorded fallback if backend is unreachable.
   if (!backendReached) {
+    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);
       audioPlay(TRACK_CALL_TOC);
@@ -213,8 +228,10 @@ static void triggerManualSos() {
       callEnd();
     }
   } else {
-    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
+    telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
   }
+
+  telemetryEvent("Response complete. Back to monitoring.");
 }
 
 void checkManualSos() {
