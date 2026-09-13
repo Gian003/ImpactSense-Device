@@ -15,14 +15,35 @@ void crashResponseInit() {
   pinMode(CANCEL_BUTTON_PIN, INPUT_PULLUP);
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
+
+  // Left untouched entirely when no motor is fitted — see VIBRATION_ENABLED
+  // in config.h, which also carries the wiring the driver needs.
+  if (VIBRATION_ENABLED) {
+    pinMode(VIBRATION_PIN, OUTPUT);
+    digitalWrite(VIBRATION_PIN, LOW);
+  }
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+static void setVibration(bool on) {
+  if (VIBRATION_ENABLED) {
+    digitalWrite(VIBRATION_PIN, on ? HIGH : LOW);
+  }
+}
 
 static void soundBuzzerPattern() {
   // Slow 250 ms on/off blink — distinct from the precaution alert's three quick beeps
   // so the rider knows by ear that an emergency countdown is in progress.
   digitalWrite(BUZZER_PIN, (millis() / 250) % 2 == 0 ? HIGH : LOW);
+
+  // Driven from the same clock as the buzzer so the two channels never
+  // disagree, but with a much longer duty: an ERM needs ~50 ms just to spin
+  // up, so a symmetric 250 ms blink is felt as a weak flutter rather than a
+  // pulse. 750 on / 250 off reads unambiguously as "sustained", which is what
+  // an emergency countdown should feel like next to the precaution's three
+  // distinct taps.
+  setVibration((millis() % 1000) < 750);
 }
 
 static void sendCrashSms(float totalAccel) {
@@ -52,15 +73,25 @@ static void sendManualSosSms() {
 
 // ── precaution alert ──────────────────────────────────────────────────────────
 
-// Three short beeps — deliberately different from the crash countdown's slow
-// blink so the rider can tell "just a warning" from "emergency in progress."
+// Three short pulses — deliberately different from the crash countdown's slow
+// sustained pattern so the rider can tell "just a warning" from "emergency in
+// progress" without looking at anything.
 void handlePrecautionAlert() {
   Serial.println("*** PRECAUTION ALERT - abnormal balance/speed detected ***");
 
+  // 100 ms is enough for a piezo, which is effectively instant, but an ERM
+  // spends the first ~50 ms of that just getting up to speed and would be
+  // felt as a faint tick. The longer pulse applies only when a motor is
+  // actually fitted, so the buzzer-only cadence stays exactly as it was.
+  const unsigned long onMs = VIBRATION_ENABLED ? 160 : 100;
+
   for (int i = 0; i < 3; i++) {
     digitalWrite(BUZZER_PIN, HIGH);
-    delay(100);
+    setVibration(true);
+    delay(onMs);
+
     digitalWrite(BUZZER_PIN, LOW);
+    setVibration(false);
     delay(100);
   }
 }
@@ -97,6 +128,7 @@ void handleCrash(float totalAccel, float totalGyro) {
   }
 
   digitalWrite(BUZZER_PIN, LOW);
+  setVibration(false); // the countdown loop can exit mid-pulse, on any of its three paths
 
   if (cancelled) {
     if (voiceCancelled) {

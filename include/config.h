@@ -177,6 +177,47 @@ const int TRACK_VOICE_CANCEL = 7;   // plays locally on helmet speaker
 // Also plays locally on the helmet speaker at the same time.
 const int TRACK_CALL_TOC = 8;
 
+// ===== Vibration motor (haptic alerts) =====
+// NOT FITTED YET. Leave VIBRATION_ENABLED false until the motor is physically
+// wired, then flip it and re-flash - nothing else has to change. With it
+// false the pin is never touched, so this is inert on a unit without one.
+//
+// Why haptic at all: at 60-80 km/h wind noise inside a helmet runs 90-100 dB,
+// and a piezo buzzer manages ~85 dB at 10 cm before the shell and padding get
+// in the way. A precaution alert the rider cannot hear at the speeds where
+// precautions matter is not much of a warning. Vibration is felt, so wind
+// noise is irrelevant to it. It supplements the buzzer rather than replacing
+// it - two channels, in step, on the same pattern.
+//
+// WIRING - never drive the motor straight from the GPIO. An ERM pulls
+// 80-150 mA against a ~40 mA pin rating, and the coil's collapse throws a
+// reverse spike that will destroy the pin.
+//
+//   GPIO 13 --[1k]--> gate/base of an N-MOSFET (AO3400) or NPN (S8050)
+//   3V3 ----> motor ----> drain/collector ----> GND
+//   flyback diode (1N4148) across the motor, cathode to 3V3   <-- NOT optional
+//   100 uF across the motor, mounted close to it, to absorb the inrush
+//
+// A 3-pin module with the transistor already on board needs none of that:
+// signal / VCC / GND, and this pin drives it directly.
+//
+// Off the 3V3 rail, not the battery - coin and bar ERMs are rated 2.5-3.8 V
+// and a freshly charged cell sits at 4.2 V. The 100 uF matters for more than
+// the motor: ADC1 also carries the microphone and battery sense, and brush
+// noise on a shared rail can read as voice activity. If the crash countdown
+// starts cancelling itself the instant the motor runs, that is the cause.
+//
+// GPIO 13 has no boot-strapping role (unlike 0, 2, 5, 12, 15). 14, 18, 19, 23
+// and 25 are equally safe if the layout prefers one of them.
+//
+// MOUNTING decides more than motor size. Bonded to the outer shell, most of
+// the energy is absorbed by the shell and EPS before it reaches the rider -
+// a strong motor can feel like nothing. Against the comfort liner, near the
+// temple or crown, even a small coin motor is unmistakable. Prefer a bar type
+// (1027/1034) over a 10 mm coin: more eccentric mass for the same money.
+const bool VIBRATION_ENABLED = false;
+const int  VIBRATION_PIN = 13;
+
 // ===== MAX9814 microphone (ADC1_CH7 — input-only GPIO) =====
 const int MIC_PIN = 35;
 
