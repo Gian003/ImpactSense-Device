@@ -10,6 +10,7 @@
 #include "contact_cache.h"
 #include "audio.h"
 #include "mic.h"
+#include "power_state.h"
 
 // DEPLOYMENT - STEP 3 (see deployment.h): uncomment with the watchdog blocks
 // in setup() and loop().
@@ -31,6 +32,7 @@ void setup() {
   runProvisioningWindow();
 
   sensorsInit();
+  powerStateInit();
   crashResponseInit();
   gpsInit();
   audioInit();
@@ -84,11 +86,19 @@ void loop() {
   // DEPLOYMENT - STEP 3: pairs with esp_task_wdt_init() in setup().
   // if (DEPLOYMENT_MODE) esp_task_wdt_reset();
 
-  pollGps();
   checkManualSos(); // detects button held ≥ MANUAL_SOS_HOLD_MS outside a crash window
 
+  // Read first, at the same 10 Hz in both power states — idle is never allowed
+  // to cost crash-detection latency. See power_state.h.
   MotionReading motion;
   readMotion(motion);
+  powerStateUpdate(motion);
+
+  // A stationary device's position is not changing, so parsing NMEA it already
+  // agrees with is pure work. Resumes the instant anything moves.
+  if (!isIdle()) {
+    pollGps();
+  }
 
   float totalAccel = motion.totalAccel;
   float totalGyro  = motion.totalGyro;
@@ -96,7 +106,19 @@ void loop() {
   bool crashDetected     = (totalAccel > ACCEL_THRESHOLD) && (totalGyro > GYRO_THRESHOLD);
   bool precautionDetected = (totalAccel > PRECAUTION_ACCEL_THRESHOLD) || (totalGyro > PRECAUTION_GYRO_THRESHOLD);
 
-  if (TELEMETRY_LABELLED) {
+  if (isIdle()) {
+    // One line a minute, so the monitor shows a resting device rather than
+    // looking like a hung one — and so the transition back is easy to spot
+    // when testing. Neither telemetry format is worth printing here: nothing
+    // is changing, which is the entire point of the state.
+    static unsigned long lastIdleNoteAt = 0;
+    if (millis() - lastIdleNoteAt >= 60000) {
+      lastIdleNoteAt = millis();
+      Serial.printf("[%7.1fs] idle - still %lus, |accel| %.2f, batt heartbeat every %lus\n",
+                    millis() / 1000.0f, stillForSeconds(), totalAccel,
+                    statusIntervalMs() / 1000);
+    }
+  } else if (TELEMETRY_LABELLED) {
     // The loop samples ten times a second but the block prints far more
     // slowly, so without these the one reading that mattered would almost
     // always fall between two prints.
@@ -150,14 +172,15 @@ void loop() {
   } else if (precautionDetected && (millis() - lastPrecautionAlertAt > PRECAUTION_COOLDOWN_MS)) {
     lastPrecautionAlertAt = millis();
     handlePrecautionAlert();
-  } else if (!TELEMETRY_LABELLED) {
+  } else if (!TELEMETRY_LABELLED && !isIdle()) {
     // Only meaningful as the third CSV column; the labelled block already
     // says what the readings are, and printing "normal" ten times a second
     // would bury it.
     Serial.println("normal");
   }
 
-  if (millis() - lastDeviceStatusAt > DEVICE_STATUS_INTERVAL_MS) {
+  // Interval comes from the power state — 60 s active, 5 min idle.
+  if (millis() - lastDeviceStatusAt > statusIntervalMs()) {
     lastDeviceStatusAt = millis();
     retryPendingCrashReport(); // flush any crash report that failed to send earlier
     reportDeviceStatus();

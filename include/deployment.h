@@ -188,6 +188,59 @@ const bool DEPLOYMENT_MODE = false;
 //   4. Rider pairs in the mobile app using the pairing_key from step 1.
 //
 // ============================================================================
+// STEP 5 - DEEP SLEEP  [DEFERRED - read the cost before building it]
+// ============================================================================
+//
+// The idle tier (power_state.h) is in and safe: it never slows the sampling
+// loop, so a device that has idled detects a crash exactly as fast as one that
+// has not. Deep sleep is the next tier and it does NOT have that property.
+// Build it only with the cost below understood and written down.
+//
+// How it would work: the MPU6050 raises its motion interrupt on an INT pin,
+// the ESP32 arms esp_sleep_enable_ext0_wakeup() on that pin and calls
+// esp_deep_sleep_start(). Movement reboots the chip. Straightforward, and the
+// hardware already supports it.
+//
+// WHAT IT COSTS. Waking is not instant:
+//
+//   ESP32 boot                    ~0.5-1 s
+//   GSM re-registration           10-30 s
+//   GPS re-acquisition            30 s to several minutes
+//
+// A crash is motion, so the MPU does wake the device - but a crash in the
+// first minute of riding would then be reported by a unit with no fix and
+// possibly no network. That turns STEP 2's stub-coordinate problem from
+// occasional into systematic, and it lands it precisely when a rider is
+// pulling into traffic. The riskiest moment becomes the moment after every
+// wake.
+//
+// So if it is built: require a long stationary period (15+ minutes, i.e.
+// genuinely parked, not waiting at a light), and hold off crash REPORTING
+// - never crash detection - for a few seconds after wake so GPS has a chance,
+// queueing rather than discarding. STEP 2's location_verified field carries
+// the honest answer when it does not.
+//
+// DO NOT EXPECT MICROAMPS. On a DevKit board the AMS1117 regulator and the
+// CP2102/CH340 USB chip keep drawing regardless of what the ESP32 does: real
+// deep sleep lands around 5-15 mA, not the datasheet's 10 uA. Still a large
+// win over ~150 mA active, but the datasheet figure needs a bare ESP32-WROOM
+// on a custom board.
+//
+// THE APP CANNOT WAKE IT. A sleeping device has no radio, and even awake it is
+// an HTTP client with no inbound channel. So "keep the device awake" belongs in
+// the app as a SETTING, stored on the devices row and read in the response to a
+// heartbeat the device already sends - not as a prompt the device waits on. A
+// prompt would mean staying awake to poll for the answer, spending exactly the
+// power the sleep was meant to save.
+//
+// CHEAPER FIRST. Before any of this, turn the WiFi radio off when
+// DEPLOYMENT_MODE is set. In the field WiFi never associates, yet
+// ensureConnectivity() still scans for 5 s per attempt and keeps the radio
+// powered - roughly 80-100 mA continuous for nothing. WiFi.mode(WIFI_OFF) is a
+// few lines, roughly doubles runtime, and takes latency off the crash path
+// rather than adding it.
+//
+// ============================================================================
 // KNOWN AND ACCEPTED - raise with the adviser, do not silently ship
 // ============================================================================
 //

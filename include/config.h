@@ -177,6 +177,47 @@ const int TRACK_VOICE_CANCEL = 7;   // plays locally on helmet speaker
 // Also plays locally on the helmet speaker at the same time.
 const int TRACK_CALL_TOC = 8;
 
+// ===== Vibration motor (haptic alerts) =====
+// NOT FITTED YET. Leave VIBRATION_ENABLED false until the motor is physically
+// wired, then flip it and re-flash - nothing else has to change. With it
+// false the pin is never touched, so this is inert on a unit without one.
+//
+// Why haptic at all: at 60-80 km/h wind noise inside a helmet runs 90-100 dB,
+// and a piezo buzzer manages ~85 dB at 10 cm before the shell and padding get
+// in the way. A precaution alert the rider cannot hear at the speeds where
+// precautions matter is not much of a warning. Vibration is felt, so wind
+// noise is irrelevant to it. It supplements the buzzer rather than replacing
+// it - two channels, in step, on the same pattern.
+//
+// WIRING - never drive the motor straight from the GPIO. An ERM pulls
+// 80-150 mA against a ~40 mA pin rating, and the coil's collapse throws a
+// reverse spike that will destroy the pin.
+//
+//   GPIO 13 --[1k]--> gate/base of an N-MOSFET (AO3400) or NPN (S8050)
+//   3V3 ----> motor ----> drain/collector ----> GND
+//   flyback diode (1N4148) across the motor, cathode to 3V3   <-- NOT optional
+//   100 uF across the motor, mounted close to it, to absorb the inrush
+//
+// A 3-pin module with the transistor already on board needs none of that:
+// signal / VCC / GND, and this pin drives it directly.
+//
+// Off the 3V3 rail, not the battery - coin and bar ERMs are rated 2.5-3.8 V
+// and a freshly charged cell sits at 4.2 V. The 100 uF matters for more than
+// the motor: ADC1 also carries the microphone and battery sense, and brush
+// noise on a shared rail can read as voice activity. If the crash countdown
+// starts cancelling itself the instant the motor runs, that is the cause.
+//
+// GPIO 13 has no boot-strapping role (unlike 0, 2, 5, 12, 15). 14, 18, 19, 23
+// and 25 are equally safe if the layout prefers one of them.
+//
+// MOUNTING decides more than motor size. Bonded to the outer shell, most of
+// the energy is absorbed by the shell and EPS before it reaches the rider -
+// a strong motor can feel like nothing. Against the comfort liner, near the
+// temple or crown, even a small coin motor is unmistakable. Prefer a bar type
+// (1027/1034) over a 10 mm coin: more eccentric mass for the same money.
+const bool VIBRATION_ENABLED = false;
+const int  VIBRATION_PIN = 13;
+
 // ===== MAX9814 microphone (ADC1_CH7 — input-only GPIO) =====
 const int MIC_PIN = 35;
 
@@ -217,6 +258,45 @@ const unsigned long CRASH_CANCEL_WINDOW_MS = 30000;
 // How often to push a device status update (battery level, and a GPS speed
 // sample when there is a real fix) to the backend.
 const unsigned long DEVICE_STATUS_INTERVAL_MS = 60000;
+
+// ===== Idle power state =====
+// See power_state.h for what idle does and, more importantly, what it refuses
+// to do. Short version: it never slows the sampling loop, so crash detection
+// is identical in both states.
+//
+// How long the device must be continuously still before idling. Two minutes
+// rather than seconds: a rider waiting at a long light should not be cycling
+// in and out of idle, and the saving from idling those extra seconds is
+// nothing next to the churn.
+const unsigned long IDLE_ENTER_MS = 120000;
+
+// What counts as "still", measured over one-second buckets. A helmet resting
+// on a table varies by only a few hundredths of a m/s^2; a helmet on a bike
+// idling at a light varies by far more than this band even before the bike
+// moves, because the engine is running. Widen STILL_ACCEL_BAND if a genuinely
+// parked device never reaches idle.
+const float STILL_ACCEL_BAND = 0.35; // m/s^2 peak-to-peak within one second
+const float STILL_GYRO_MAX   = 8.0;  // deg/s
+
+// What ends idle, checked every sample. Deliberately far below the precaution
+// thresholds - this only has to mean "something moved", and being too eager
+// here costs a little power while being too slow costs readiness.
+const float WAKE_ACCEL_DELTA = 1.5;  // m/s^2 away from 1 g
+const float WAKE_GYRO        = 25.0; // deg/s
+
+// Heartbeat interval while idle. The device is stationary, so the position and
+// battery it would report have barely changed - and this is the one saving
+// that actually matters, because it is the modem transmitting.
+const unsigned long IDLE_STATUS_INTERVAL_MS = 300000; // 5 min
+
+// CPU frequency scaling. 80 MHz is the floor that still supports the radio,
+// and is far more than the loop needs. Set IDLE_CPU_SCALING false if the GPS
+// or SIM800L link misbehaves after an idle transition - the Arduino core is
+// supposed to re-derive UART dividers on the switch, and this is the first
+// thing to rule out if it does not.
+const bool     IDLE_CPU_SCALING = true;
+const uint32_t IDLE_CPU_MHZ     = 80;
+const uint32_t ACTIVE_CPU_MHZ   = 240;
 
 // ===== Serial telemetry =====
 // The loop used to print "9.81 , 0.42 , normal" ten times a second: three bare
