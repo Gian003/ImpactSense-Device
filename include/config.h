@@ -12,6 +12,26 @@
 // MPU6050 (I2C):      SDA=21, SCL=22, VCC=3.3V, GND=GND
 // NEO-6M GPS (UART2):  GPS TX -> ESP32 RX=16, GPS RX -> ESP32 TX=17
 // SIM800L GSM (UART1): SIM800 TX -> ESP32 RX=26, SIM800 RX -> ESP32 TX=27
+//
+//   FIRST, WHICH BOARD? There are two kinds, and they want OPPOSITE supplies.
+//
+//   V2.x / "5V" boards (pins labelled 5V and VDD): carry their own regulator
+//   and logic level shifting. Feed the 5V pin from a 5 V supply that can
+//   deliver ~2 A in bursts. Do NOT wire a Li-ion straight to it - 3.0-4.2 V
+//   in, minus the onboard regulator's drop, leaves the radio under its 3.4 V
+//   minimum, and it will answer AT and then fall over the moment it
+//   transmits. Tie VDD to the ESP32's 3.3 V, not 5 V: VDD sets the level of
+//   the module's TX line, and 5 V logic on GPIO 26 is outside the ESP32's
+//   rating. Arduino wiring guides put VDD on 5 V because an Arduino is 5 V.
+//
+//   Bare module (small board, a single VCC pin, no regulator): everything
+//   below applies.
+//
+//   A multimeter cannot confirm either supply is adequate. It shows the
+//   average, and the transmit bursts that collapse a weak supply last well
+//   under a millisecond - a steady reading can sit on top of dips deep enough
+//   to reset the radio.
+//
 //   SIM800L needs a supply in its ~3.4-4.4V operating range - NOT the ESP32
 //   3.3V rail (too low/no current headroom) and NOT the ESP32 5V/VIN pin
 //   either (too high, and that pin can't source the ~2A TX-burst current
