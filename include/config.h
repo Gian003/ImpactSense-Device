@@ -66,11 +66,37 @@ const char *const WIFI_SSID = "BIDA_dFDEEF";  // ← UPDATE if testing at home
 const char *const WIFI_PASSWORD = "tF2teH9s"; // ← UPDATE if testing at home
 
 // ===== GSM/GPRS fallback config =====
-// TODO: confirm the correct APN for your SIM's carrier (e.g. Globe: "internet.globe.com.ph",
-// Smart/TNT: "internet"). Most Philippine prepaid data APNs need no username/password.
-const char *const GPRS_APN = "internet.globe.com.ph";
+// Set SIM_CARRIER to the network of the SIM physically in the modem; the APN
+// follows from it. This used to be a hardcoded Globe APN sitting beside a TNT
+// SIM, with nothing anywhere to suggest they disagreed.
+//
+// Only two choices matter for a SIM800L, because the brands pair up on shared
+// networks: TNT and Sun are Smart's own brands, TM is Globe's. Switching
+// within a pair changes nothing - same towers, same 2G, same coverage. DITO
+// has no 2G at all and cannot register on this module under any
+// circumstances.
+//
+// The APN only matters for GPRS data. SMS and voice calls - which the crash
+// path depends on - need cellular registration alone.
+enum SimCarrier { CARRIER_SMART_TNT, CARRIER_GLOBE_TM };
+const SimCarrier SIM_CARRIER = CARRIER_SMART_TNT;
+
+const char *const GPRS_APN  = (SIM_CARRIER == CARRIER_GLOBE_TM) ? "internet.globe.com.ph"
+                                                                : "internet";
 const char *const GPRS_USER = "";
 const char *const GPRS_PASS = "";
+
+// Boot-time answer to "can this SIM carry data on this module at all?"
+//
+// A phone cannot answer that. It does its data over LTE, while the SIM800L can
+// only use 2G GPRS - and carriers have been winding down 2G data independently
+// of 2G voice and SMS. So a SIM with working data in a phone may still carry
+// none on the device, and STEP 1 in deployment.h depends entirely on it.
+//
+// When true, modemInit() attaches to GPRS once after registering, reports
+// whether it got an IP address, and detaches. Adds up to ~30 s to boot and
+// uses a few KB. Turn it on while choosing a carrier, then back off.
+const bool GPRS_SELF_TEST = false;
 
 // Whether to route HTTP traffic over GPRS when WiFi is unavailable.
 //
@@ -222,11 +248,35 @@ const int  VIBRATION_PIN = 13;
 const int MIC_PIN = 35;
 
 // Voice Activity Detection — leaky-integrator parameters.
-// deviation: how far the raw ADC value (0-4095) must be from midpoint (2048) to count as speech.
-// VOICE_SCORE_TARGET: score that must be accumulated before VAD confirms voice.
-// At 20 ms polling: +3 per voiced sample, -1 per silent sample → ~1.5 s of speech to confirm.
+//
+// MIC_VOICE_THRESHOLD: how far a raw ADC sample (0-4095) must sit from the
+// microphone's measured resting level to count as sound. NEVER VALIDATED:
+// until the score-cap fix in mic.cpp, voice cancel could not fire at all, so
+// nobody has ever seen whether 700 is right. Tune it on the real helmet -
+// lower if speaking does not cancel, higher if a quiet room does.
+//
+// VOICE_SCORE_TARGET: +3 per loud sample, -1 per quiet one. Because the
+// countdown only listens while the buzzer is off (see voiceMayCountNow() in
+// crash_response.cpp), roughly 40% of samples are taken - so this needs about
+// 3 s of fairly continuous speech, after the grace period below.
 const int MIC_VOICE_THRESHOLD = 700;
 const int VOICE_SCORE_TARGET = 200;
+
+// Voice cancel ignores the microphone for this long after a crash is detected.
+// Covers the impact, scraping, and the spoken prompt. MUST be longer than
+// 0002.mp3 (TRACK_CRASH_DETECTED) - it plays through a speaker next to the
+// mic, and a prompt that outlasts this would be heard as the rider replying.
+const unsigned long VOICE_CANCEL_GRACE_MS = 5000;
+
+// After the buzzer or motor switches off, how long before the mic is trusted
+// again - a piezo and an ERM both keep ringing briefly.
+const unsigned long SELF_NOISE_SETTLE_MS = 40;
+
+// Voice is ignored while the helmet is moving harder than this. Set to allow
+// a rider who is standing up or walking, while excluding one still sliding -
+// who is in wind loud enough to clear MIC_VOICE_THRESHOLD on its own.
+const float VOICE_MOTION_ACCEL_DELTA = 4.0;  // m/s^2 away from 1 g
+const float VOICE_MOTION_GYRO        = 90.0; // deg/s
 
 // ===== Manual SOS =====
 // Hold the cancel button for this long outside a crash window to send SOS.

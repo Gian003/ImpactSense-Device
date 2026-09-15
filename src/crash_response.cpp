@@ -6,9 +6,18 @@
 #include "contact_cache.h"
 #include "audio.h"
 #include "mic.h"
+#include "sensors.h"
 #include "telemetry.h"
 
 #include <Arduino.h>
+
+// Countdown alert timing. Named once because two things must agree on it: the
+// pattern that drives the buzzer and motor, and the voice gate that refuses to
+// listen while they are running. If these drifted apart, the device would
+// start hearing its own buzzer as the rider talking.
+static const unsigned long BUZZER_HALF_PERIOD_MS = 250;  // 250 on, 250 off
+static const unsigned long VIB_PERIOD_MS         = 1000;
+static const unsigned long VIB_ON_MS             = 750;
 
 // ── init ──────────────────────────────────────────────────────────────────────
 
@@ -36,7 +45,7 @@ static void setVibration(bool on) {
 static void soundBuzzerPattern() {
   // Slow 250 ms on/off blink — distinct from the precaution alert's three quick beeps
   // so the rider knows by ear that an emergency countdown is in progress.
-  digitalWrite(BUZZER_PIN, (millis() / 250) % 2 == 0 ? HIGH : LOW);
+  digitalWrite(BUZZER_PIN, (millis() / BUZZER_HALF_PERIOD_MS) % 2 == 0 ? HIGH : LOW);
 
   // Driven from the same clock as the buzzer so the two channels never
   // disagree, but with a much longer duty: an ERM needs ~50 ms just to spin
@@ -44,7 +53,53 @@ static void soundBuzzerPattern() {
   // pulse. 750 on / 250 off reads unambiguously as "sustained", which is what
   // an emergency countdown should feel like next to the precaution's three
   // distinct taps.
-  setVibration((millis() % 1000) < 750);
+  setVibration((millis() % VIB_PERIOD_MS) < VIB_ON_MS);
+}
+
+// Whether a microphone sample taken right now can be trusted to mean the rider
+// is speaking.
+//
+// Voice cancel was dead until the score cap in mic.cpp was fixed. Bringing it
+// to life also made it capable of cancelling a REAL crash on noise the device
+// makes or experiences itself, so the fix and this gate have to ship together.
+// Every rule below fails toward reporting: when in doubt, don't listen. The
+// cancel button is never gated, so a conscious rider always has a way out.
+static bool voiceMayCountNow(unsigned long windowStart) {
+  unsigned long now = millis();
+
+  // The loudest moments of a crash - the impact, scraping, the bike going
+  // down - all land in its first seconds, and so does the spoken "crash
+  // detected" prompt, played through a speaker next to the microphone.
+  if (now - windowStart < VOICE_CANCEL_GRACE_MS) {
+    return false;
+  }
+
+  // The buzzer sits centimetres from the mic, and the MAX9814's automatic gain
+  // will turn it up. At a 50% duty cycle it scores +3 far more often than it
+  // leaks -1, and would cancel the countdown within seconds with nobody
+  // speaking. So listen only in its off half, after it has rung down.
+  if ((now % (2 * BUZZER_HALF_PERIOD_MS)) < BUZZER_HALF_PERIOD_MS + SELF_NOISE_SETTLE_MS) {
+    return false;
+  }
+
+  // Same for the motor: acoustic buzz, and brush noise on the rail the ADC shares.
+  if (VIBRATION_ENABLED && (now % VIB_PERIOD_MS) < VIB_ON_MS + SELF_NOISE_SETTLE_MS) {
+    return false;
+  }
+
+  // A helmet still sliding or tumbling is in wind, and wind noise easily
+  // clears MIC_VOICE_THRESHOLD. Only a helmet that has come to rest - or is
+  // moving about as much as someone standing up and walking - is listened to.
+  // A failed read is treated as moving: unknown should never cancel a report.
+  MotionReading m;
+  readMotion(m);
+  if (m.substituted ||
+      fabsf(m.totalAccel - 9.81f) > VOICE_MOTION_ACCEL_DELTA ||
+      m.totalGyro > VOICE_MOTION_GYRO) {
+    return false;
+  }
+
+  return true;
 }
 
 static void sendCrashSms(float totalAccel) {
@@ -104,8 +159,15 @@ void handleCrash(float totalAccel, float totalGyro) {
   char line[96];
   telemetryEvent("CRASH DETECTED");
   snprintf(line, sizeof(line),
-           "Rider has %lu seconds to cancel - press the button, or just speak.",
+           "Rider has %lu seconds to cancel - press the button at any time,",
            CRASH_CANCEL_WINDOW_MS / 1000);
+  telemetryDetail(line);
+  // Said out loud because otherwise it looks broken in a demo: someone speaks
+  // straight away, nothing happens, and it reads as a failed feature rather
+  // than the deliberate grace period it is.
+  snprintf(line, sizeof(line),
+           "or speak once the alert has finished (voice is ignored for %lu s).",
+           VOICE_CANCEL_GRACE_MS / 1000);
   telemetryDetail(line);
 
   audioPlay(TRACK_CRASH_DETECTED);
@@ -123,7 +185,10 @@ void handleCrash(float totalAccel, float totalGyro) {
       break;
     }
 
-    if (checkVoiceActivity()) {
+    // Gate first: when the gate says no, the mic is not sampled at all, so the
+    // score holds where it was instead of absorbing noise or decaying away
+    // speech that was already heard.
+    if (voiceMayCountNow(windowStart) && checkVoiceActivity()) {
       cancelled      = true;
       voiceCancelled = true;
       break;

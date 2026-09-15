@@ -67,6 +67,33 @@ static uint32_t detectModemBaud()
   return 0;
 }
 
+// Attaches to GPRS once and reports whether the network hands out an address.
+// Deliberately separate from connectGSM(): this has to run even with
+// GSM_DATA_ENABLED off, because its whole purpose is to find out whether
+// turning that on could ever work on the SIM that is fitted. Getting an IP
+// proves the carrier still offers 2G data to this SIM; it does not prove the
+// backend is reachable over it - STEP 1 in deployment.h covers that part.
+static void runGprsSelfTest()
+{
+  Serial.printf("[GPRS test] Attaching to data with APN '%s' (%s SIM)...\n",
+                GPRS_APN, SIM_CARRIER == CARRIER_GLOBE_TM ? "Globe/TM" : "Smart/TNT");
+
+  unsigned long start = millis();
+  if (!modem.gprsConnect(GPRS_APN, GPRS_USER, GPRS_PASS))
+  {
+    Serial.printf("[GPRS test] FAILED after %lus - no 2G data on this SIM.\n",
+                  (millis() - start) / 1000);
+    Serial.println("[GPRS test]   SMS and calls are unaffected; the crash path still works.");
+    Serial.println("[GPRS test]   Check SIM_CARRIER matches the SIM, then try the other network.");
+    Serial.println("[GPRS test]   If both fail, STEP 1 needs a 4G module, not a different SIM.");
+    return;
+  }
+
+  Serial.printf("[GPRS test] OK in %lus - network assigned IP %s. 2G data works on this SIM.\n",
+                (millis() - start) / 1000, modem.getLocalIP().c_str());
+  modem.gprsDisconnect();
+}
+
 // Brings the SIM800 modem up once at boot so SMS - which only needs cellular
 // registration, not an active GPRS/data session - works regardless of whether
 // WiFi or GPRS ends up carrying HTTP traffic. Without this, the modem was only
@@ -156,6 +183,11 @@ void modemInit()
   int16_t csq = modem.getSignalQuality();
   Serial.printf("SIM800 modem ready (registered, signal %d/31%s).\n", csq,
                 csq < 10 ? " - marginal, SMS may fail" : "");
+
+  if (GPRS_SELF_TEST)
+  {
+    runGprsSelfTest();
+  }
 }
 
 bool connectWiFi(unsigned long timeoutMs)
