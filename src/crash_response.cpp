@@ -6,8 +6,18 @@
 #include "contact_cache.h"
 #include "audio.h"
 #include "mic.h"
+#include "sensors.h"
+#include "telemetry.h"
 
 #include <Arduino.h>
+
+// Countdown alert timing. Named once because two things must agree on it: the
+// pattern that drives the buzzer and motor, and the voice gate that refuses to
+// listen while they are running. If these drifted apart, the device would
+// start hearing its own buzzer as the rider talking.
+static const unsigned long BUZZER_HALF_PERIOD_MS = 250;  // 250 on, 250 off
+static const unsigned long VIB_PERIOD_MS         = 1000;
+static const unsigned long VIB_ON_MS             = 750;
 
 // ── init ──────────────────────────────────────────────────────────────────────
 
@@ -35,7 +45,7 @@ static void setVibration(bool on) {
 static void soundBuzzerPattern() {
   // Slow 250 ms on/off blink — distinct from the precaution alert's three quick beeps
   // so the rider knows by ear that an emergency countdown is in progress.
-  digitalWrite(BUZZER_PIN, (millis() / 250) % 2 == 0 ? HIGH : LOW);
+  digitalWrite(BUZZER_PIN, (millis() / BUZZER_HALF_PERIOD_MS) % 2 == 0 ? HIGH : LOW);
 
   // Driven from the same clock as the buzzer so the two channels never
   // disagree, but with a much longer duty: an ERM needs ~50 ms just to spin
@@ -43,7 +53,53 @@ static void soundBuzzerPattern() {
   // pulse. 750 on / 250 off reads unambiguously as "sustained", which is what
   // an emergency countdown should feel like next to the precaution's three
   // distinct taps.
-  setVibration((millis() % 1000) < 750);
+  setVibration((millis() % VIB_PERIOD_MS) < VIB_ON_MS);
+}
+
+// Whether a microphone sample taken right now can be trusted to mean the rider
+// is speaking.
+//
+// Voice cancel was dead until the score cap in mic.cpp was fixed. Bringing it
+// to life also made it capable of cancelling a REAL crash on noise the device
+// makes or experiences itself, so the fix and this gate have to ship together.
+// Every rule below fails toward reporting: when in doubt, don't listen. The
+// cancel button is never gated, so a conscious rider always has a way out.
+static bool voiceMayCountNow(unsigned long windowStart) {
+  unsigned long now = millis();
+
+  // The loudest moments of a crash - the impact, scraping, the bike going
+  // down - all land in its first seconds, and so does the spoken "crash
+  // detected" prompt, played through a speaker next to the microphone.
+  if (now - windowStart < VOICE_CANCEL_GRACE_MS) {
+    return false;
+  }
+
+  // The buzzer sits centimetres from the mic, and the MAX9814's automatic gain
+  // will turn it up. At a 50% duty cycle it scores +3 far more often than it
+  // leaks -1, and would cancel the countdown within seconds with nobody
+  // speaking. So listen only in its off half, after it has rung down.
+  if ((now % (2 * BUZZER_HALF_PERIOD_MS)) < BUZZER_HALF_PERIOD_MS + SELF_NOISE_SETTLE_MS) {
+    return false;
+  }
+
+  // Same for the motor: acoustic buzz, and brush noise on the rail the ADC shares.
+  if (VIBRATION_ENABLED && (now % VIB_PERIOD_MS) < VIB_ON_MS + SELF_NOISE_SETTLE_MS) {
+    return false;
+  }
+
+  // A helmet still sliding or tumbling is in wind, and wind noise easily
+  // clears MIC_VOICE_THRESHOLD. Only a helmet that has come to rest - or is
+  // moving about as much as someone standing up and walking - is listened to.
+  // A failed read is treated as moving: unknown should never cancel a report.
+  MotionReading m;
+  readMotion(m);
+  if (m.substituted ||
+      fabsf(m.totalAccel - 9.81f) > VOICE_MOTION_ACCEL_DELTA ||
+      m.totalGyro > VOICE_MOTION_GYRO) {
+    return false;
+  }
+
+  return true;
 }
 
 static void sendCrashSms(float totalAccel) {
@@ -77,7 +133,8 @@ static void sendManualSosSms() {
 // sustained pattern so the rider can tell "just a warning" from "emergency in
 // progress" without looking at anything.
 void handlePrecautionAlert() {
-  Serial.println("*** PRECAUTION ALERT - abnormal balance/speed detected ***");
+  telemetryEvent("PRECAUTION - unstable riding detected. Warning the rider.");
+  telemetryDetail("Below crash level, so nothing is reported. Buzzer only.");
 
   // 100 ms is enough for a piezo, which is effectively instant, but an ERM
   // spends the first ~50 ms of that just getting up to speed and would be
@@ -99,9 +156,19 @@ void handlePrecautionAlert() {
 // ── crash response ────────────────────────────────────────────────────────────
 
 void handleCrash(float totalAccel, float totalGyro) {
-  Serial.println("*** CRASH DETECTED - cancellation window started ***");
-  Serial.printf("Press the cancel button within %lu seconds, or speak to cancel.\n",
-                CRASH_CANCEL_WINDOW_MS / 1000);
+  char line[96];
+  telemetryEvent("CRASH DETECTED");
+  snprintf(line, sizeof(line),
+           "Rider has %lu seconds to cancel - press the button at any time,",
+           CRASH_CANCEL_WINDOW_MS / 1000);
+  telemetryDetail(line);
+  // Said out loud because otherwise it looks broken in a demo: someone speaks
+  // straight away, nothing happens, and it reads as a failed feature rather
+  // than the deliberate grace period it is.
+  snprintf(line, sizeof(line),
+           "or speak once the alert has finished (voice is ignored for %lu s).",
+           VOICE_CANCEL_GRACE_MS / 1000);
+  telemetryDetail(line);
 
   audioPlay(TRACK_CRASH_DETECTED);
   resetVoiceScore(); // start fresh so a previous event's score doesn't carry over
@@ -118,7 +185,10 @@ void handleCrash(float totalAccel, float totalGyro) {
       break;
     }
 
-    if (checkVoiceActivity()) {
+    // Gate first: when the gate says no, the mic is not sampled at all, so the
+    // score holds where it was instead of absorbing noise or decaying away
+    // speech that was already heard.
+    if (voiceMayCountNow(windowStart) && checkVoiceActivity()) {
       cancelled      = true;
       voiceCancelled = true;
       break;
@@ -132,16 +202,18 @@ void handleCrash(float totalAccel, float totalGyro) {
 
   if (cancelled) {
     if (voiceCancelled) {
-      Serial.println("Crash report CANCELLED — voice activity detected (rider is conscious).");
+      telemetryEvent("CANCELLED - the rider spoke, so they are conscious.");
+      telemetryDetail("Nothing reported. No SMS, no call, no incident record.");
       audioPlay(TRACK_VOICE_CANCEL);
     } else {
-      Serial.println("Crash report CANCELLED — button pressed by rider.");
+      telemetryEvent("CANCELLED - the rider pressed the button.");
+      telemetryDetail("Nothing reported. No SMS, no call, no incident record.");
       audioPlay(TRACK_CANCELLED);
     }
     return;
   }
 
-  Serial.println("Cancellation window elapsed. Reporting crash...");
+  telemetryEvent("NO RESPONSE from the rider - treating this as a real crash.");
   audioPlay(TRACK_REPORTING);
 
   // SMS to the rider's emergency contact — always fires via SIM800L (cellular
@@ -155,11 +227,13 @@ void handleCrash(float totalAccel, float totalGyro) {
   // delays is longest in exactly the situation where the backend is going to
   // fail anyway. Running the SMS afterwards put the most reliable channel on
   // the crash path last and latest, gated behind the least reliable one.
+  telemetryDetail("1. Texting the emergency contact...");
   sendCrashSms(totalAccel);
 
   // HTTP POST to backend (creates incident, triggers Pusher + Twilio).
   // Returns true if the backend acknowledged the report (HTTP 201).
   // Returns false if offline — queued in NVS flash and retried later.
+  telemetryDetail("2. Reporting to the command centre...");
   bool backendReached = reportCrash(totalAccel, totalGyro);
 
   audioPlay(TRACK_REPORT_SENT);
@@ -174,7 +248,7 @@ void handleCrash(float totalAccel, float totalGyro) {
   //   direct GSM call to the TOC hotline, playing the pre-recorded message
   //   through the call (DFPlayer DAC_R → 100 kΩ → SIM800L MIC+).
   if (!backendReached) {
-    Serial.println("Backend unreachable — falling back to SIM800L direct TOC call.");
+    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
       audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
@@ -182,8 +256,10 @@ void handleCrash(float totalAccel, float totalGyro) {
       callEnd();
     }
   } else {
-    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
+    telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
   }
+
+  telemetryEvent("Response complete. Back to monitoring.");
 }
 
 // ── manual SOS ────────────────────────────────────────────────────────────────
@@ -194,18 +270,22 @@ static unsigned long gSosPressStart = 0;
 static bool          gSosButtonHeld = false;
 
 static void triggerManualSos() {
-  Serial.println("*** MANUAL SOS - button held for 3 seconds ***");
+  telemetryEvent("MANUAL SOS - the rider held the button down.");
+  telemetryDetail("No cancellation window: this was deliberate.");
   audioPlay(TRACK_MANUAL_SOS);
 
   // SMS first, for the same reason as handleCrash() — see the note there.
+  telemetryDetail("1. Texting the emergency contact...");
   sendManualSosSms();
 
   // Treat as a "high"-severity crash so the backend creates a proper incident record.
+  telemetryDetail("2. Reporting to the command centre...");
   bool backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
 
   // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
   // SIM800L pre-recorded fallback if backend is unreachable.
   if (!backendReached) {
+    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);
       audioPlay(TRACK_CALL_TOC);
@@ -213,8 +293,10 @@ static void triggerManualSos() {
       callEnd();
     }
   } else {
-    Serial.println("Backend reached — Twilio handles TOC notification. Skipping SIM800L call.");
+    telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
   }
+
+  telemetryEvent("Response complete. Back to monitoring.");
 }
 
 void checkManualSos() {

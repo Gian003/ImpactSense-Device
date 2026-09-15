@@ -67,6 +67,33 @@ static uint32_t detectModemBaud()
   return 0;
 }
 
+// Attaches to GPRS once and reports whether the network hands out an address.
+// Deliberately separate from connectGSM(): this has to run even with
+// GSM_DATA_ENABLED off, because its whole purpose is to find out whether
+// turning that on could ever work on the SIM that is fitted. Getting an IP
+// proves the carrier still offers 2G data to this SIM; it does not prove the
+// backend is reachable over it - STEP 1 in deployment.h covers that part.
+static void runGprsSelfTest()
+{
+  Serial.printf("[GPRS test] Attaching to data with APN '%s' (%s SIM)...\n",
+                GPRS_APN, SIM_CARRIER == CARRIER_GLOBE_TM ? "Globe/TM" : "Smart/TNT");
+
+  unsigned long start = millis();
+  if (!modem.gprsConnect(GPRS_APN, GPRS_USER, GPRS_PASS))
+  {
+    Serial.printf("[GPRS test] FAILED after %lus - no 2G data on this SIM.\n",
+                  (millis() - start) / 1000);
+    Serial.println("[GPRS test]   SMS and calls are unaffected; the crash path still works.");
+    Serial.println("[GPRS test]   Check SIM_CARRIER matches the SIM, then try the other network.");
+    Serial.println("[GPRS test]   If both fail, STEP 1 needs a 4G module, not a different SIM.");
+    return;
+  }
+
+  Serial.printf("[GPRS test] OK in %lus - network assigned IP %s. 2G data works on this SIM.\n",
+                (millis() - start) / 1000, modem.getLocalIP().c_str());
+  modem.gprsDisconnect();
+}
+
 // Brings the SIM800 modem up once at boot so SMS - which only needs cellular
 // registration, not an active GPRS/data session - works regardless of whether
 // WiFi or GPRS ends up carrying HTTP traffic. Without this, the modem was only
@@ -146,9 +173,34 @@ void modemInit()
   {
     Serial.println();
     int16_t csq = modem.getSignalQuality();
-    Serial.printf("GSM registration failed. Signal quality %d/31%s\n", csq,
-                  (csq == 99 || csq == 0) ? " - check the antenna" : "");
-    Serial.println("  SIM800L is 2G only; confirm 2G is still available here.");
+
+    // Reaching this point means the SIM already passed getSimStatus() above,
+    // so it is readable and unlocked. Said explicitly because a failed
+    // registration looks like a bad SIM, and swapping SIMs is the first thing
+    // anyone tries - which cannot help when the fault is power or the network.
+    Serial.printf("GSM registration failed (signal %d/31). The SIM card itself read fine.\n", csq);
+
+    // 99 and 0 used to share one "check the antenna" hint, but they mean
+    // different things. 0 is a real measurement of almost nothing. 99 is no
+    // measurement at all: no 2G network was found, or the radio kept resetting
+    // under its transmit bursts before it could take one. Only the second
+    // points at the antenna, and neither points at the SIM.
+    if (csq > 5 && csq != 99)
+    {
+      Serial.println("  Signal is usable, so the network refused or delayed registration:");
+      Serial.println("  SIM not registered with the carrier, no load, or just slower than 20 s.");
+      return;
+    }
+
+    Serial.println(csq == 99
+        ? "  99 = no measurement: no 2G network found, or the radio reset before it could look."
+        : "  Almost no signal: 2G is barely audible here - antenna, or weak coverage.");
+    Serial.println("  The SIM800L's LED tells you which:");
+    Serial.println("    blinks every ~1 s    searching - power is fine, it hears no 2G network");
+    Serial.println("    blinks every ~3 s    registered - it was only slow; reset and retry");
+    Serial.println("    stops or restarts    resetting under load - the supply, not the SIM");
+    Serial.println("  To test the network without this hardware: put the SIM in a phone set to");
+    Serial.println("  2G only. No service there means no 2G here, for any module.");
     return;
   }
   Serial.println(" done.");
@@ -156,6 +208,11 @@ void modemInit()
   int16_t csq = modem.getSignalQuality();
   Serial.printf("SIM800 modem ready (registered, signal %d/31%s).\n", csq,
                 csq < 10 ? " - marginal, SMS may fail" : "");
+
+  if (GPRS_SELF_TEST)
+  {
+    runGprsSelfTest();
+  }
 }
 
 bool connectWiFi(unsigned long timeoutMs)

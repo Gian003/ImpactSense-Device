@@ -12,6 +12,26 @@
 // MPU6050 (I2C):      SDA=21, SCL=22, VCC=3.3V, GND=GND
 // NEO-6M GPS (UART2):  GPS TX -> ESP32 RX=16, GPS RX -> ESP32 TX=17
 // SIM800L GSM (UART1): SIM800 TX -> ESP32 RX=26, SIM800 RX -> ESP32 TX=27
+//
+//   FIRST, WHICH BOARD? There are two kinds, and they want OPPOSITE supplies.
+//
+//   V2.x / "5V" boards (pins labelled 5V and VDD): carry their own regulator
+//   and logic level shifting. Feed the 5V pin from a 5 V supply that can
+//   deliver ~2 A in bursts. Do NOT wire a Li-ion straight to it - 3.0-4.2 V
+//   in, minus the onboard regulator's drop, leaves the radio under its 3.4 V
+//   minimum, and it will answer AT and then fall over the moment it
+//   transmits. Tie VDD to the ESP32's 3.3 V, not 5 V: VDD sets the level of
+//   the module's TX line, and 5 V logic on GPIO 26 is outside the ESP32's
+//   rating. Arduino wiring guides put VDD on 5 V because an Arduino is 5 V.
+//
+//   Bare module (small board, a single VCC pin, no regulator): everything
+//   below applies.
+//
+//   A multimeter cannot confirm either supply is adequate. It shows the
+//   average, and the transmit bursts that collapse a weak supply last well
+//   under a millisecond - a steady reading can sit on top of dips deep enough
+//   to reset the radio.
+//
 //   SIM800L needs a supply in its ~3.4-4.4V operating range - NOT the ESP32
 //   3.3V rail (too low/no current headroom) and NOT the ESP32 5V/VIN pin
 //   either (too high, and that pin can't source the ~2A TX-burst current
@@ -66,11 +86,37 @@ const char *const WIFI_SSID = "BIDA_dFDEEF";  // ← UPDATE if testing at home
 const char *const WIFI_PASSWORD = "tF2teH9s"; // ← UPDATE if testing at home
 
 // ===== GSM/GPRS fallback config =====
-// TODO: confirm the correct APN for your SIM's carrier (e.g. Globe: "internet.globe.com.ph",
-// Smart/TNT: "internet"). Most Philippine prepaid data APNs need no username/password.
-const char *const GPRS_APN = "internet.globe.com.ph";
+// Set SIM_CARRIER to the network of the SIM physically in the modem; the APN
+// follows from it. This used to be a hardcoded Globe APN sitting beside a TNT
+// SIM, with nothing anywhere to suggest they disagreed.
+//
+// Only two choices matter for a SIM800L, because the brands pair up on shared
+// networks: TNT and Sun are Smart's own brands, TM is Globe's. Switching
+// within a pair changes nothing - same towers, same 2G, same coverage. DITO
+// has no 2G at all and cannot register on this module under any
+// circumstances.
+//
+// The APN only matters for GPRS data. SMS and voice calls - which the crash
+// path depends on - need cellular registration alone.
+enum SimCarrier { CARRIER_SMART_TNT, CARRIER_GLOBE_TM };
+const SimCarrier SIM_CARRIER = CARRIER_SMART_TNT;
+
+const char *const GPRS_APN  = (SIM_CARRIER == CARRIER_GLOBE_TM) ? "internet.globe.com.ph"
+                                                                : "internet";
 const char *const GPRS_USER = "";
 const char *const GPRS_PASS = "";
+
+// Boot-time answer to "can this SIM carry data on this module at all?"
+//
+// A phone cannot answer that. It does its data over LTE, while the SIM800L can
+// only use 2G GPRS - and carriers have been winding down 2G data independently
+// of 2G voice and SMS. So a SIM with working data in a phone may still carry
+// none on the device, and STEP 1 in deployment.h depends entirely on it.
+//
+// When true, modemInit() attaches to GPRS once after registering, reports
+// whether it got an IP address, and detaches. Adds up to ~30 s to boot and
+// uses a few KB. Turn it on while choosing a carrier, then back off.
+const bool GPRS_SELF_TEST = false;
 
 // Whether to route HTTP traffic over GPRS when WiFi is unavailable.
 //
@@ -222,11 +268,35 @@ const int  VIBRATION_PIN = 13;
 const int MIC_PIN = 35;
 
 // Voice Activity Detection — leaky-integrator parameters.
-// deviation: how far the raw ADC value (0-4095) must be from midpoint (2048) to count as speech.
-// VOICE_SCORE_TARGET: score that must be accumulated before VAD confirms voice.
-// At 20 ms polling: +3 per voiced sample, -1 per silent sample → ~1.5 s of speech to confirm.
+//
+// MIC_VOICE_THRESHOLD: how far a raw ADC sample (0-4095) must sit from the
+// microphone's measured resting level to count as sound. NEVER VALIDATED:
+// until the score-cap fix in mic.cpp, voice cancel could not fire at all, so
+// nobody has ever seen whether 700 is right. Tune it on the real helmet -
+// lower if speaking does not cancel, higher if a quiet room does.
+//
+// VOICE_SCORE_TARGET: +3 per loud sample, -1 per quiet one. Because the
+// countdown only listens while the buzzer is off (see voiceMayCountNow() in
+// crash_response.cpp), roughly 40% of samples are taken - so this needs about
+// 3 s of fairly continuous speech, after the grace period below.
 const int MIC_VOICE_THRESHOLD = 700;
 const int VOICE_SCORE_TARGET = 200;
+
+// Voice cancel ignores the microphone for this long after a crash is detected.
+// Covers the impact, scraping, and the spoken prompt. MUST be longer than
+// 0002.mp3 (TRACK_CRASH_DETECTED) - it plays through a speaker next to the
+// mic, and a prompt that outlasts this would be heard as the rider replying.
+const unsigned long VOICE_CANCEL_GRACE_MS = 5000;
+
+// After the buzzer or motor switches off, how long before the mic is trusted
+// again - a piezo and an ERM both keep ringing briefly.
+const unsigned long SELF_NOISE_SETTLE_MS = 40;
+
+// Voice is ignored while the helmet is moving harder than this. Set to allow
+// a rider who is standing up or walking, while excluding one still sliding -
+// who is in wind loud enough to clear MIC_VOICE_THRESHOLD on its own.
+const float VOICE_MOTION_ACCEL_DELTA = 4.0;  // m/s^2 away from 1 g
+const float VOICE_MOTION_GYRO        = 90.0; // deg/s
 
 // ===== Manual SOS =====
 // Hold the cancel button for this long outside a crash window to send SOS.
@@ -299,11 +369,28 @@ const uint32_t IDLE_CPU_MHZ     = 80;
 const uint32_t ACTIVE_CPU_MHZ   = 240;
 
 // ===== Serial telemetry =====
-// The loop used to print "9.81 , 0.42 , normal" ten times a second: three bare
-// numbers with no units, no axes and nothing to compare them against.
+// The monitor has two audiences that want opposite things, so there are three
+// formats rather than one compromise. Switch with TELEMETRY_MODE below.
 //
-// TELEMETRY_LABELLED prints a readable block instead, on the interval below.
-// Set it to false to get the old comma-separated line back - that format is
-// what the Arduino Serial Plotter expects, so keep it if you are graphing.
-const bool          TELEMETRY_LABELLED    = true;
-const unsigned long TELEMETRY_INTERVAL_MS = 1500;
+//   TELEMETRY_DEMO      For showing the device to people who are not reading
+//                       the source: panel, adviser, PNP. Names the state in
+//                       words, and draws how close the readings are to the
+//                       crash level as bars, because "31% of crash level"
+//                       lands instantly and "|mag| 7.8 m/s2" does not.
+//
+//   TELEMETRY_DETAILED  Per-axis figures, peaks between prints, I2C health.
+//                       What you want when tuning ACCEL_THRESHOLD or chasing
+//                       a wiring fault. This was the previous default.
+//
+//   TELEMETRY_PLOTTER   Bare "9.81 , 0.42 , normal" CSV, which is the format
+//                       the Arduino Serial Plotter graphs.
+//
+// All three print the same >> event lines, so the story of a crash reads the
+// same way whichever one is selected.
+enum TelemetryMode { TELEMETRY_DEMO, TELEMETRY_DETAILED, TELEMETRY_PLOTTER };
+const TelemetryMode TELEMETRY_MODE = TELEMETRY_DEMO;
+
+// How often the block refreshes. 1.5 s suits tuning; 2-3 s reads more calmly
+// in a demo, where a panel scrolling too fast is harder to follow than one
+// that updates a little behind the action.
+const unsigned long TELEMETRY_INTERVAL_MS = 2000;
