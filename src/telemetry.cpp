@@ -26,8 +26,16 @@ static const char *networkLabel() {
 
 // A 0-100 bar. Percentages above the threshold are clamped, because past 100%
 // the useful information is "it fired", not how far past it went.
-static void printBar(const char *label, float value, float threshold) {
-  float pct = (threshold > 0.0f) ? (value / threshold) * 100.0f : 0.0f;
+//
+// `rest` is what the reading is when nothing is happening, and the bar runs
+// from there to the threshold. Acceleration needs it: ACCEL_THRESHOLD includes
+// gravity, so a device lying still on a desk used to show "40% of crash
+// level" - exactly the reading a demo audience would take to mean it was
+// already close to going off. Crash detection itself is unchanged; this only
+// moves where the bar's zero is, and 100% still lands exactly on the trigger.
+static void printBar(const char *label, float value, float rest, float threshold) {
+  float span = threshold - rest;
+  float pct = (span > 0.0f) ? ((value - rest) / span) * 100.0f : 0.0f;
   if (pct < 0.0f)   pct = 0.0f;
   int filled = (int) ((pct / 100.0f) * BAR_WIDTH + 0.5f);
   if (filled > BAR_WIDTH) filled = BAR_WIDTH;
@@ -62,8 +70,8 @@ static void printDemoBlock(const MotionReading &motion) {
 
   Serial.printf("  %-10s %d%%\n", "Battery", readBatteryPercent());
 
-  printBar("Impact",   motion.totalAccel, ACCEL_THRESHOLD);
-  printBar("Rotation", motion.totalGyro,  GYRO_THRESHOLD);
+  printBar("Impact",   motion.totalAccel, 9.81f, ACCEL_THRESHOLD); // at rest: 1 g
+  printBar("Rotation", motion.totalGyro,  0.0f,  GYRO_THRESHOLD);  // at rest: 0 deg/s
 
   if (motion.substituted) {
     Serial.println("  Sensor     READ FAILED - check the SDA/SCL wiring");
@@ -108,9 +116,9 @@ void telemetryBanner() {
   if (TELEMETRY_MODE == TELEMETRY_DEMO) {
     Serial.println();
     Serial.println("ImpactSense is running. The panel below refreshes every");
-    Serial.printf ("%lu seconds. A crash needs the Impact bar past 100%% AND\n",
+    Serial.printf ("%lu seconds. Both bars sit near 0%% at rest. A crash needs\n",
                    TELEMETRY_INTERVAL_MS / 1000);
-    Serial.println("the Rotation bar past 100%. Events appear as >> lines.");
+    Serial.println("Impact AND Rotation past 100% together. Events appear as >> lines.");
     return;
   }
 
