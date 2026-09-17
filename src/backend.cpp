@@ -96,14 +96,15 @@ bool reportCrash(float totalAccel, float totalGyro) {
   doc["type"]        = "collision";
   doc["severity"]    = severityFromImpact(totalAccel);
 
-  // DEPLOYMENT - STEP 2 (see deployment.h). Without this, a crash during GPS
-  // cold start reports the config.h stub coordinates - central Urdaneta -
-  // indistinguishably from a real fix, sending responders somewhere the rider
-  // has never been. reportDeviceStatus() already guards its speed telemetry
-  // this way; the crash path cannot, until the backend has a column to put
-  // the answer in, because dropping the coordinates entirely is worse.
+  // Whether the coordinates above are a real satellite fix. Without it, a
+  // crash during GPS cold start reports the config.h stub coordinates -
+  // central Urdaneta - indistinguishably from a real fix. The coordinates are
+  // still sent either way: a report with a doubtful location beats no report.
   //
-  // doc["location_verified"] = hasGpsFix();
+  // The backend uses this to refuse the nearest-patrol alert on a guessed
+  // location, which would otherwise send the unit nearest to a place the
+  // rider has never been. A backend that predates the field ignores it.
+  doc["location_verified"] = hasGpsFix();
 
   String body;
   serializeJson(doc, body);

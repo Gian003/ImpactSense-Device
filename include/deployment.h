@@ -95,26 +95,23 @@ const bool DEPLOYMENT_MODE = false;
 // and a report with a doubtful location still beats no report. What responders
 // need is to know which one they are looking at.
 //
-// This needs a backend change, so it is not behind the flag. Both halves:
+// MOSTLY DONE. What is in place:
 //
-//   Backend - add a nullable boolean to incidents:
+//   Firmware - reportCrash() sends location_verified = hasGpsFix().
 //
-//     php artisan make:migration add_location_verified_to_incidents_table
+//   Backend - incidents.location_verified (migration 2026_09_18_000001),
+//   accepted by DeviceController::reportIncident. The nearest-patrol alert
+//   refuses to run unless it is true, and says why in the incident timeline.
 //
-//     $table->boolean('location_verified')->nullable()->after('longitude');
+// What is left:
 //
-//     Add 'location_verified' to the validate() array and the create() array
-//     in DeviceController::reportIncident, then surface it on the TOC
-//     dashboard - a plain "LOCATION UNVERIFIED" badge on the incident row is
-//     enough. An operator who sees it works the phone instead of the map.
+//   1. Run `php artisan migrate` on the server. Until then the backend
+//      ignores the field (deliberately - see App\Support\PatrolAlertSchema)
+//      and every report is stored as "unknown".
 //
-//   Firmware - in backend.cpp, inside reportCrash(), add one line:
-//
-//     doc["location_verified"] = hasGpsFix();
-//
-//   hasGpsFix() already exists (gps.h) and is already used to guard the speed
-//   telemetry in reportDeviceStatus() for exactly this reason. The crash path
-//   was deliberately left alone because it needed the backend field first.
+//   2. Show it on the TOC dashboard. A plain "LOCATION UNVERIFIED" badge on
+//      the incident row is enough: an operator who sees it works the phone
+//      instead of the map. The value is stored; nothing displays it yet.
 //
 // ============================================================================
 // STEP 3 - MAKE A WEDGED UNIT RECOVER BY ITSELF  [RELIABILITY]
