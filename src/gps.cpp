@@ -35,3 +35,14 @@ int getSpeedKph() {
   }
   return (int) lround(gps.speed.kmph());
 }
+
+int getSatelliteCount() {
+  return gps.satellites.isValid() ? (int) gps.satellites.value() : -1;
+}
+
+bool gpsReceivingData() {
+  // A handful of characters is enough to tell the difference. NMEA arrives
+  // continuously, so a live module passes this within a second of boot and a
+  // dead one never does.
+  return gps.charsProcessed() > 10;
+}
