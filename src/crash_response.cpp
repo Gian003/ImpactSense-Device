@@ -4,6 +4,7 @@
 #include "connectivity.h"
 #include "gps.h"
 #include "contact_cache.h"
+#include "device_identity.h"
 #include "audio.h"
 #include "mic.h"
 #include "sensors.h"
@@ -113,6 +114,37 @@ static void sendCrashSms(float totalAccel) {
                String(getLatitude(), 6) + "," + String(getLongitude(), 6);
 
   sendSms(getCachedContactPhone(), msg);
+}
+
+// What the backup voice call cannot say.
+//
+// The call plays a fixed recording, so the TOC hears that there has been an
+// accident and nothing else - not who, not where, not how bad. This text
+// carries those, and states that no incident was filed, which is the part a
+// dispatcher would otherwise have to work out by finding nothing on the board.
+//
+// Runs only on the offline path. Two segments on most networks; worth it.
+static void sendTocFallbackSms(const String &what, float totalAccel, bool withSeverity) {
+  if (strlen(TOC_SMS_NUMBER) == 0) {
+    Serial.println("TOC fallback SMS skipped: TOC_SMS_NUMBER is empty (see config.h).");
+    return;
+  }
+
+  String riderName = getCachedRiderName();
+  if (riderName.length() == 0) {
+    riderName = "An ImpactSense rider";
+  }
+
+  String msg = "ImpactSense: " + riderName + " " + what + ".";
+  if (withSeverity) {
+    msg += " Severity: " + severityFromImpact(totalAccel) + ".";
+  }
+  msg += " Map: https://maps.google.com/?q=" +
+         String(getLatitude(), 6) + "," + String(getLongitude(), 6) +
+         " Device " + getDeviceCode() +
+         ". Server unreachable - this crash is NOT on the dashboard.";
+
+  sendSms(TOC_SMS_NUMBER, msg);
 }
 
 static void sendManualSosSms() {
@@ -248,7 +280,14 @@ void handleCrash(float totalAccel, float totalGyro) {
   //   direct GSM call to the TOC hotline, playing the pre-recorded message
   //   through the call (DFPlayer DAC_R → 100 kΩ → SIM800L MIC+).
   if (!backendReached) {
-    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
+    telemetryDetail("   Command centre unreachable - texting and calling the hotline directly.");
+
+    // Text first, then call. The text arrives in seconds and the call takes
+    // most of a minute, so the dispatcher is reading who and where while the
+    // phone is still ringing - rather than hearing a recording about an
+    // accident they cannot place.
+    sendTocFallbackSms("may have been in a motorcycle accident", totalAccel, true);
+
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
       audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
@@ -285,7 +324,12 @@ static void triggerManualSos() {
   // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
   // SIM800L pre-recorded fallback if backend is unreachable.
   if (!backendReached) {
-    telemetryDetail("   Command centre unreachable - calling the hotline directly instead.");
+    telemetryDetail("   Command centre unreachable - texting and calling the hotline directly.");
+
+    // Same as handleCrash(): the recording cannot say this was deliberate,
+    // or who pressed it, or where they are.
+    sendTocFallbackSms("has triggered a manual SOS", 0.0f, false);
+
     if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
       delay(CALL_CONNECT_WAIT_MS);
       audioPlay(TRACK_CALL_TOC);

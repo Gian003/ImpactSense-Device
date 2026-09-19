@@ -133,10 +133,12 @@ const bool GPRS_SELF_TEST = false;
 // cert store. Each of those alone is enough to fail the handshake.
 //
 // None of this weakens the crash path. GSM is still the fallback; it just
-// carries SMS and the voice call to the TOC hotline (both of which need only
-// cellular registration, never a data session, and work on a far weaker
-// signal than GPRS would) instead of an HTTP request. See handleCrash() in
-// crash_response.cpp.
+// carries SMS and the voice call instead of an HTTP request - both of which
+// need only cellular registration, never a data session, and work on a far
+// weaker signal than GPRS would. Offline, a crash sends three things: a text
+// to the rider's emergency contact, a text to the TOC carrying the details
+// the recorded call cannot speak (TOC_SMS_NUMBER), and the call itself. See
+// handleCrash() in crash_response.cpp.
 //
 // Follows DEPLOYMENT_MODE, because it is only safe to enable together with
 // the port-80 switch below - and only after "Always Use HTTPS" is off in
@@ -149,11 +151,29 @@ const bool GSM_DATA_ENABLED = DEPLOYMENT_MODE;
 // actual AT communication so boot and crash-handling aren't stuck waiting on
 // timeouts against a dead modem while testing everything else. Flip back to
 // true once the module is properly powered and registering.
-const bool SIM800L_ENABLED = true;
+const bool SIM800L_ENABLED = false;
 
 // ===== Emergency voice call =====
 // TOC / dispatch number the device calls when a crash is confirmed.
 const char *const EMERGENCY_HOTLINE_NUMBER = "09652145185";
+
+// Where the device texts the crash details when it could not reach the
+// backend. Defaults to the hotline above, which is a mobile number.
+//
+// The backup voice call can only play a fixed recording - it cannot say who
+// crashed, how badly, or where, because those are not in the audio file. So
+// on its own it tells the TOC that something happened to somebody, somewhere.
+// This text carries what the call cannot, and says plainly that the crash is
+// NOT on the dashboard, so nobody goes looking for a record that was never
+// filed.
+//
+// Sent only when the backend was unreachable. When the report got through,
+// the server has already called the hotline with the full details and the
+// incident is on the board - a second text would be noise.
+//
+// Set to "" to switch it off, or to a duty desk mobile if the hotline number
+// is a landline and cannot receive SMS.
+const char *const TOC_SMS_NUMBER = EMERGENCY_HOTLINE_NUMBER;
 
 // How long after dialling to wait before playing the TOC audio track.
 // Allows the ring + answer cycle to complete before the message starts.
