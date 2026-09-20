@@ -41,6 +41,29 @@ static bool loadPendingCrashReport(String& bodyOut) {
   return pending && bodyOut.length() > 0;
 }
 
+// Adds the two headers that prove this report came from this device, when a
+// signing secret has been provisioned. Without one the request goes out
+// unsigned and the server treats the device as not yet provisioned — which is
+// what keeps a fleet already in the field working. See device_identity.h.
+//
+// `signedBytes` is what the signature covers: the JSON body on a POST, or the
+// query string on a GET, exactly as sent.
+static void addSignatureHeaders(HttpClient& http, const String& signedBytes) {
+  if (!hasSigningSecret()) {
+    return;
+  }
+
+  unsigned long counter = nextRequestCounter();
+  String signature = signRequest(counter, signedBytes);
+
+  if (signature.length() == 0) {
+    return; // signing failed; it already said so on serial
+  }
+
+  http.sendHeader("X-Device-Counter", String(counter));
+  http.sendHeader("X-Device-Signature", signature);
+}
+
 static bool httpPostJson(const char* path, const String& jsonBody, int& statusOut, String& bodyOut) {
   if (activeClient == nullptr) {
     return false;
@@ -49,7 +72,19 @@ static bool httpPostJson(const char* path, const String& jsonBody, int& statusOu
   HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
-  int err = http.post(path, "application/json", jsonBody);
+  // Assembled header by header rather than through post(path, type, body),
+  // which cannot carry extra headers.
+  http.beginRequest();
+  int err = http.post(path);
+  if (err == 0) {
+    http.sendHeader("Content-Type", "application/json");
+    http.sendHeader("Content-Length", jsonBody.length());
+    addSignatureHeaders(http, jsonBody);
+    http.beginBody();
+    http.print(jsonBody);
+    http.endRequest();
+  }
+
   if (err != 0) {
     Serial.printf("HTTP connection error: %d\n", err);
     return false;
@@ -68,7 +103,19 @@ static bool httpGetJson(const char* path, int& statusOut, String& bodyOut) {
   HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
+  // The server signs the query string, so hand the same bytes to the signer:
+  // everything after the '?', or nothing if the path carries no query.
+  String pathStr(path);
+  int q = pathStr.indexOf('?');
+  String query = (q >= 0) ? pathStr.substring(q + 1) : String("");
+
+  http.beginRequest();
   int err = http.get(path);
+  if (err == 0) {
+    addSignatureHeaders(http, query);
+    http.endRequest();
+  }
+
   if (err != 0) {
     Serial.printf("HTTP connection error: %d\n", err);
     return false;
