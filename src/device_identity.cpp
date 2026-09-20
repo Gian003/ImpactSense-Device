@@ -135,6 +135,13 @@ void runProvisioningWindow() {
     while (Serial.available()) {
       char c = Serial.read();
 
+      // The window measures silence, not total time. Eight seconds is plenty
+      // to notice somebody is there, but nowhere near enough to send SET, then
+      // a 64-character SECRET, then SHOW - and having it close mid-sequence
+      // means resetting the board and racing it again. Anything typed keeps
+      // it open; it closes eight seconds after the last keystroke.
+      start = millis();
+
       if (c != '\n' && c != '\r') {
         line += c;
         continue;
