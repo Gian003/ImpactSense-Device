@@ -162,10 +162,23 @@ void runProvisioningWindow() {
       if (line.equalsIgnoreCase("SHOW")) {
         printDeviceIdentity();
 
-      } else if (line.length() >= 7 && (line.startsWith("SECRET ") || line.startsWith("secret "))) {
-        String secret = line.substring(7);
+      } else if (line.length() >= 6 && line.substring(0, 6).equalsIgnoreCase("SECRET")) {
+        String secret = line.substring(6);
         secret.trim();
         secret.toLowerCase();
+
+        // Caught separately from a malformed value, because it means something
+        // different and has a different fix: the clipboard was empty or held
+        // something stale, so nothing arrived after the word. Reporting this
+        // as "not recognized" sent people looking at the command they typed
+        // instead of at what actually got pasted.
+        if (secret.length() == 0) {
+          Serial.println("[Provision] SECRET needs the value after it, and nothing was pasted.");
+          Serial.println("[Provision] The copy button on the TOC device page puts the whole line");
+          Serial.println("[Provision] on the clipboard: SECRET followed by 64 characters.");
+          line = "";
+          continue;
+        }
 
         // 32 bytes as hex. Checked here so a truncated paste is caught at the
         // desk, rather than as reports the server silently refuses later.
