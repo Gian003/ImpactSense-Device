@@ -201,9 +201,21 @@ const uint16_t API_PORT = DEPLOYMENT_MODE ? 80 : 443;
 // instead and one firmware image serves every device — see
 // include/device_identity.h for how to set it on a unit.
 //
-// This is only how long the boot-time provisioning window listens on USB
-// serial before startup continues on its own.
-const unsigned long PROVISION_WINDOW_MS = 8000;
+// How long the boot-time provisioning window listens on USB serial before
+// startup continues on its own.
+//
+// Two figures, because they answer different questions. The first is how long
+// to wait for someone who may not be there - paid on every single boot, so it
+// stays short. The second is how long to keep waiting once somebody has
+// actually typed something, where the cost is only that a person at the desk
+// has stopped typing, and the pain of it expiring mid-sequence is having to
+// reset the board and start over.
+//
+// Raise PROVISION_WINDOW_MS if you want longer to click into the monitor after
+// a reset; raise PROVISION_IDLE_MS if a minute and a half between keystrokes
+// is not enough.
+const unsigned long PROVISION_WINDOW_MS = 20000;
+const unsigned long PROVISION_IDLE_MS   = 90000;
 
 // In deployment mode the full window is skipped unless someone is actually
 // typing: the device waits only this long to notice a keystroke. Eight seconds

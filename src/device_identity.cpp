@@ -121,26 +121,32 @@ void runProvisioningWindow() {
   Serial.println(" then press Enter. Full instructions are in");
   Serial.println(" include/device_identity.h. No input needed to");
   Serial.println(" skip - the device boots normally on its own.");
+  Serial.printf (" Waiting %lus for a first keystroke, then %lus\n",
+                 PROVISION_WINDOW_MS / 1000, PROVISION_IDLE_MS / 1000);
+  Serial.println(" between them. Nothing typed? It just continues.");
   Serial.println("===============================================");
   printDeviceIdentity();
 
   String line;
-  unsigned long start = millis();
+  unsigned long start  = millis();
+  unsigned long window = PROVISION_WINDOW_MS;
 
   // Only runs right after power-on/reset. Once this returns, typing on serial
   // no longer reconfigures anything, so a unit already in the field cannot be
   // silently reprovisioned without someone physically holding it, plugging in
   // USB, and resetting it on purpose.
-  while (millis() - start < PROVISION_WINDOW_MS) {
+  while (millis() - start < window) {
     while (Serial.available()) {
       char c = Serial.read();
 
-      // The window measures silence, not total time. Eight seconds is plenty
-      // to notice somebody is there, but nowhere near enough to send SET, then
-      // a 64-character SECRET, then SHOW - and having it close mid-sequence
-      // means resetting the board and racing it again. Anything typed keeps
-      // it open; it closes eight seconds after the last keystroke.
-      start = millis();
+      // The window measures silence, not total time, and it gets far more
+      // generous the moment somebody is clearly there. The short first wait
+      // is paid on every boot; the long one is only ever paid by a person at
+      // the desk who has paused. Closing mid-sequence - between SET and a
+      // 64-character SECRET, say - means resetting the board and racing it
+      // again, which is the thing worth avoiding.
+      start  = millis();
+      window = PROVISION_IDLE_MS;
 
       if (c != '\n' && c != '\r') {
         line += c;
