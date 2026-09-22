@@ -335,8 +335,8 @@ const float VOICE_MOTION_GYRO        = 90.0; // deg/s
 const unsigned long MANUAL_SOS_HOLD_MS = 3000;
 
 // ===== Crash detection thresholds =====
-const float ACCEL_THRESHOLD = 25.0; // m/s^2 (total acceleration, includes gravity)
-const float GYRO_THRESHOLD = 200.0; // deg/s (total rotation)
+const float ACCEL_THRESHOLD = 25.0; // m/s^2 (total acceleration, includes gravity) //25.0
+const float GYRO_THRESHOLD = 200.0; // deg/s (total rotation) // 200.0
 
 // ===== Precaution (early-warning) thresholds =====
 // Lower than the full crash thresholds above, and checked with OR instead of

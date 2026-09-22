@@ -49,36 +49,50 @@ const bool DEPLOYMENT_MODE = false;
 //
 // None of that shows up on the bench, because the bench has WiFi.
 //
-// The fix is a coordinated change on both sides. Do them in this order:
+// The fix is a coordinated change on both sides.
 //
-//   1a. In the Cloudflare dashboard for impactsense.org, turn OFF
-//       "Always Use HTTPS" (SSL/TLS -> Edge Certificates). Until this is off,
-//       port 80 answers every request with a 301 to https:// - and
-//       ArduinoHttpClient does not follow redirects, so the device sees a
-//       redirect it cannot act on and the report is queued and lost.
+//   1a. DONE. "Always Use HTTPS" is off in the Cloudflare dashboard for
+//       impactsense.org (SSL/TLS -> Edge Certificates). While it was on, port
+//       80 answered every request with a 301 to https:// - and
+//       ArduinoHttpClient does not follow redirects, so the device saw a
+//       redirect it could not act on and the report was queued and lost.
 //
-//   1b. Confirm from a computer, NOT a browser (browsers silently upgrade to
-//       HTTPS and will hide the failure):
+//   1b. DONE, confirmed 2026-09-22:
 //
-//         curl -v http://impactsense.org/api/health
+//         curl -i http://impactsense.org/api/health
+//         HTTP/1.1 200 OK
+//         {"status":"up"}
 //
-//       Expect 200 and {"status":"up"}. A 301 means 1a has not taken effect
-//       yet - Cloudflare can take a minute, and the old redirect may be
-//       cached.
+//       Plain HTTP, no redirect. Re-check with curl and NOT a browser if this
+//       is ever in doubt - browsers silently upgrade to HTTPS and hide the
+//       failure. A 301 means the setting has been turned back on.
 //
-//   1c. Only then set DEPLOYMENT_MODE = true and re-flash.
+//   1c. OUTSTANDING, and no longer blocked by the server.
+//
+//       What is still missing is a SIM that can actually carry 2G GPRS data.
+//       The TNT SIM tested here had none for a week despite showing signal,
+//       and a phone cannot answer the question because a phone does its data
+//       over LTE. Turn GPRS_SELF_TEST on in config.h, boot once, and read
+//       whether the modem gets an IP address. Only when it does is there any
+//       point setting DEPLOYMENT_MODE = true and re-flashing.
 //
 // What this costs: device_code, GPS coordinates and severity travel in
-// cleartext over the carrier network. That is a real and permanent tradeoff,
-// not a temporary shortcut, so state it plainly in the manuscript rather than
-// leaving a panelist to find it. The reason it is acceptable here is that the
-// alternative is no backend connectivity whatsoever, and the payload contains
-// no credentials - the pairing_key never reaches this firmware.
+// cleartext over the carrier network, so anyone positioned to read that
+// traffic can read a crash report. State it plainly in the manuscript rather
+// than leaving a panelist to find it.
+//
+// What it no longer costs, since the device-signing work: the ability to
+// FORGE one. Every report carries an HMAC over its own body and a counter that
+// only climbs, and the signing secret itself never travels - so an
+// eavesdropper on plain HTTP can read a report and cannot fabricate, alter or
+// replay one. Confidentiality is the whole of what is given up here.
 //
 // The proper fix, when there is budget: replace the SIM800L with a 4G module
 // (SIM7600 or A7670). Those do TLS 1.2 with SNI correctly, so port 443 works
-// over cellular and none of this section applies. That is a hardware change
-// and a TinyGSM modem-define change, nothing more.
+// over cellular and none of this section applies - and a 4G module also
+// sidesteps 1c entirely, since the 2G data being withdrawn is exactly what
+// the SIM800L depends on. That is a hardware change and a TinyGSM
+// modem-define change, nothing more.
 //
 // ============================================================================
 // STEP 2 - STOP REPORTING A GUESSED LOCATION AS IF IT WERE REAL  [SAFETY]

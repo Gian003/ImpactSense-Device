@@ -221,21 +221,18 @@ bool reportDeviceStatus() {
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
 
-  // The backend writes a speed_reports row whenever all three of these are
-  // present (RiderDeviceController::updateStatus), which is what feeds "Speed
-  // Reports per Area" - so the heartbeat doubles as the speed telemetry and no
-  // second periodic call is needed.
+  // No position or speed here, deliberately.
   //
-  // Only attached on a real fix. getLatitude()/getLongitude() fall back to the
-  // stub coordinates in config.h, and sending those would file a reading the
-  // device never actually took at a place it has never been, permanently, in a
-  // table meant for aggregation.
-  int speedKph = getSpeedKph();
-  if (hasGpsFix() && speedKph >= 0) {
-    doc["latitude"]  = getLatitude();
-    doc["longitude"] = getLongitude();
-    doc["speed_kph"] = speedKph;
-  }
+  // This used to attach latitude, longitude and speed_kph on any heartbeat
+  // with a satellite fix, and the comment claimed the backend stored them in
+  // speed_reports. It never did: RiderDeviceController::updateStatus validated
+  // none of the three and dropped them, and nothing anywhere in the backend
+  // read or wrote that table. Speed reporting was dropped from the system
+  // because the PNP does not operate it, so the fields were paying for
+  // themselves in GSM bytes on every heartbeat and buying nothing.
+  //
+  // The crash report still carries a position - see reportCrash(). That is the
+  // one place a location actually matters.
 
   String body;
   serializeJson(doc, body);
