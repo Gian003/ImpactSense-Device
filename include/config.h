@@ -99,7 +99,7 @@ const char *const WIFI_PASSWORD = "tF2teH9s"; // ← UPDATE if testing at home
 // The APN only matters for GPRS data. SMS and voice calls - which the crash
 // path depends on - need cellular registration alone.
 enum SimCarrier { CARRIER_SMART_TNT, CARRIER_GLOBE_TM };
-const SimCarrier SIM_CARRIER = CARRIER_SMART_TNT;
+const SimCarrier SIM_CARRIER = CARRIER_GLOBE_TM;
 
 const char *const GPRS_APN  = (SIM_CARRIER == CARRIER_GLOBE_TM) ? "internet.globe.com.ph"
                                                                 : "internet";
@@ -116,7 +116,7 @@ const char *const GPRS_PASS = "";
 // When true, modemInit() attaches to GPRS once after registering, reports
 // whether it got an IP address, and detaches. Adds up to ~30 s to boot and
 // uses a few KB. Turn it on while choosing a carrier, then back off.
-const bool GPRS_SELF_TEST = false;
+const bool GPRS_SELF_TEST = true;
 
 // Whether to route HTTP traffic over GPRS when WiFi is unavailable.
 //
@@ -151,7 +151,7 @@ const bool GSM_DATA_ENABLED = DEPLOYMENT_MODE;
 // actual AT communication so boot and crash-handling aren't stuck waiting on
 // timeouts against a dead modem while testing everything else. Flip back to
 // true once the module is properly powered and registering.
-const bool SIM800L_ENABLED = false;
+const bool SIM800L_ENABLED = true;
 
 // ===== Emergency voice call =====
 // TOC / dispatch number the device calls when a crash is confirmed.
@@ -232,6 +232,36 @@ const double STUB_LONGITUDE = 120.5650;
 // ===== Battery voltage divider calibration =====
 // Assumes a 100k/100k divider (halves the voltage) and a single-cell LiPo (3.3V empty, 4.2V full).
 // Re-measure with a multimeter and adjust if your divider resistors differ.
+//
+// IS THE DIVIDER ACTUALLY FITTED? Two 100k resistors in series from the cell's
+// + terminal to GND, with GPIO 34 on the midpoint. Set this false on a unit
+// built without them.
+//
+// It matters because GPIO 34 is input-only and has no internal pull. With
+// nothing on it the pin floats, analogRead() returns whatever charge happens
+// to be sitting on it, and the heartbeat publishes a battery level that
+// wanders for no reason - which looks far more like a failing device than an
+// unfitted sensor does.
+//
+// NEVER wire the cell straight to GPIO 34. A charged cell sits at 4.2 V and
+// the ADC pin is rated to 3.3 V; the divider is what makes the reading safe,
+// not just accurate.
+const bool BATTERY_SENSE_FITTED = false;
+
+// What to report while the divider is absent.
+//
+// It cannot be "unknown". RiderDeviceController::updateStatus validates
+// battery_level as required|integer|between:0,100, so a sentinel like -1
+// fails the whole heartbeat with a 422 and takes the device's liveness
+// reporting down with it. Omitting the field fails the same way.
+//
+// So this is a placeholder, and deliberately a high one: 0 renders as a flat
+// battery in the dashboard, which is a more misleading thing to show than a
+// full one. The honest fix is a nullable battery_level column and a real
+// "unknown" state end to end - worth doing, but it is a schema change plus a
+// UI change, and it is not what an unfitted resistor pair is owed.
+const int BATTERY_UNFITTED_REPORT = 100;
+
 const float BATTERY_DIVIDER_RATIO = 2.0;
 const float BATTERY_MIN_V = 3.3;
 const float BATTERY_MAX_V = 4.2;
@@ -332,7 +362,7 @@ const float VOICE_MOTION_GYRO        = 90.0; // deg/s
 
 // ===== Manual SOS =====
 // Hold the cancel button for this long outside a crash window to send SOS.
-const unsigned long MANUAL_SOS_HOLD_MS = 3000;
+const unsigned long MANUAL_SOS_HOLD_MS = 3000;   
 
 // ===== Crash detection thresholds =====
 const float ACCEL_THRESHOLD = 25.0; // m/s^2 (total acceleration, includes gravity) //25.0
@@ -420,9 +450,16 @@ const uint32_t ACTIVE_CPU_MHZ   = 240;
 // All three print the same >> event lines, so the story of a crash reads the
 // same way whichever one is selected.
 enum TelemetryMode { TELEMETRY_DEMO, TELEMETRY_DETAILED, TELEMETRY_PLOTTER };
-const TelemetryMode TELEMETRY_MODE = TELEMETRY_DEMO;
+
+// DETAILED while bringing the new board up module by module: it is the only
+// mode that prints per-axis figures, the peak between prints, and whether an
+// I2C read was substituted. DEMO hides all three behind a progress bar, which
+// is right for a panel and wrong for a bench.
+//
+// Put this back to TELEMETRY_DEMO before showing the device to anyone.
+const TelemetryMode TELEMETRY_MODE = TELEMETRY_DETAILED;
 
 // How often the block refreshes. 1.5 s suits tuning; 2-3 s reads more calmly
 // in a demo, where a panel scrolling too fast is harder to follow than one
 // that updates a little behind the action.
-const unsigned long TELEMETRY_INTERVAL_MS = 2000;
+const unsigned long TELEMETRY_INTERVAL_MS = 1500;

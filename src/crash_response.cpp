@@ -16,9 +16,25 @@
 // pattern that drives the buzzer and motor, and the voice gate that refuses to
 // listen while they are running. If these drifted apart, the device would
 // start hearing its own buzzer as the rider talking.
-static const unsigned long BUZZER_HALF_PERIOD_MS = 250;  // 250 on, 250 off
-static const unsigned long VIB_PERIOD_MS         = 1000;
-static const unsigned long VIB_ON_MS             = 750;
+//
+// An alarm-clock cadence, not a steady blink. A 2 Hz on/off is easy for a
+// dazed or half-conscious rider to absorb into the background; a burst of fast
+// beeps followed by silence is the pattern every alarm clock uses precisely
+// because it is hard to sleep through, and the silence makes each new burst
+// land as a fresh event rather than a continuing tone.
+//
+// One cycle: ALARM_BURST_MS of rapid beeping, then quiet for the remainder of
+// ALARM_CYCLE_MS.
+static const unsigned long ALARM_CYCLE_MS    = 1600;  // whole repeat
+static const unsigned long ALARM_BURST_MS    = 900;   // beeping part of it
+static const unsigned long ALARM_BEEP_MS     = 120;   // one beep
+static const unsigned long ALARM_BEEP_GAP_MS = 100;   // between beeps
+
+// How far into a cycle the quiet part starts. The microphone may only be
+// trusted after this, plus SELF_NOISE_SETTLE_MS for the piezo to stop ringing.
+// That leaves ~660 ms of listening in every 1600 ms - a 41% duty, near enough
+// to the old pattern's 40% that VOICE_SCORE_TARGET needs no retuning.
+static const unsigned long ALARM_QUIET_FROM_MS = ALARM_BURST_MS;
 
 // ── init ──────────────────────────────────────────────────────────────────────
 
@@ -44,17 +60,21 @@ static void setVibration(bool on) {
 }
 
 static void soundBuzzerPattern() {
-  // Slow 250 ms on/off blink — distinct from the precaution alert's three quick beeps
-  // so the rider knows by ear that an emergency countdown is in progress.
-  digitalWrite(BUZZER_PIN, (millis() / BUZZER_HALF_PERIOD_MS) % 2 == 0 ? HIGH : LOW);
+  const unsigned long inCycle = millis() % ALARM_CYCLE_MS;
+  const bool bursting = inCycle < ALARM_BURST_MS;
 
-  // Driven from the same clock as the buzzer so the two channels never
-  // disagree, but with a much longer duty: an ERM needs ~50 ms just to spin
-  // up, so a symmetric 250 ms blink is felt as a weak flutter rather than a
-  // pulse. 750 on / 250 off reads unambiguously as "sustained", which is what
-  // an emergency countdown should feel like next to the precaution's three
-  // distinct taps.
-  setVibration((millis() % VIB_PERIOD_MS) < VIB_ON_MS);
+  // Rapid beeps during the burst, silence for the rest of the cycle. Still
+  // unmistakably different from the precaution alert's three isolated taps,
+  // and far harder to sleep through than the steady blink it replaces.
+  const bool beepOn = bursting &&
+                      (inCycle % (ALARM_BEEP_MS + ALARM_BEEP_GAP_MS)) < ALARM_BEEP_MS;
+  digitalWrite(BUZZER_PIN, beepOn ? HIGH : LOW);
+
+  // The motor runs for the whole burst rather than following each beep. An ERM
+  // needs ~50 ms just to spin up, so chasing a 120 ms beep would be felt as a
+  // faint buzz; one sustained pulse per cycle is felt as a shake, and it still
+  // lines up with the burst so the two channels never contradict each other.
+  setVibration(bursting);
 }
 
 // Whether a microphone sample taken right now can be trusted to mean the rider
@@ -76,15 +96,22 @@ static bool voiceMayCountNow(unsigned long windowStart) {
   }
 
   // The buzzer sits centimetres from the mic, and the MAX9814's automatic gain
-  // will turn it up. At a 50% duty cycle it scores +3 far more often than it
-  // leaks -1, and would cancel the countdown within seconds with nobody
-  // speaking. So listen only in its off half, after it has rung down.
-  if ((now % (2 * BUZZER_HALF_PERIOD_MS)) < BUZZER_HALF_PERIOD_MS + SELF_NOISE_SETTLE_MS) {
+  // will turn it up. Left ungated it scores +3 far more often than it leaks
+  // -1, and would cancel the countdown within seconds with nobody speaking.
+  //
+  // With the alarm-clock cadence the quiet window is the gap between bursts,
+  // not the off-half of a blink - so this tracks ALARM_QUIET_FROM_MS rather
+  // than a half period. Both derive from the same constants the pattern uses,
+  // which is what stops the two drifting apart.
+  const unsigned long inCycle = now % ALARM_CYCLE_MS;
+  if (inCycle < ALARM_QUIET_FROM_MS + SELF_NOISE_SETTLE_MS) {
     return false;
   }
 
-  // Same for the motor: acoustic buzz, and brush noise on the rail the ADC shares.
-  if (VIBRATION_ENABLED && (now % VIB_PERIOD_MS) < VIB_ON_MS + SELF_NOISE_SETTLE_MS) {
+  // The motor runs for the whole burst, so its quiet window is the same one.
+  // Kept as its own check because it has its own settle time - brush noise on
+  // the rail the ADC shares outlasts the acoustic buzz.
+  if (VIBRATION_ENABLED && inCycle < ALARM_BURST_MS + SELF_NOISE_SETTLE_MS) {
     return false;
   }
 

@@ -86,7 +86,13 @@ static void printDemoBlock(const MotionReading &motion) {
   printBar("Impact",   motion.totalAccel, 9.81f, ACCEL_THRESHOLD); // at rest: 1 g
   printBar("Rotation", motion.totalGyro,  0.0f,  GYRO_THRESHOLD);  // at rest: 0 deg/s
 
-  if (motion.substituted) {
+  // Two different faults wearing the same flag. A missing sensor is permanent
+  // and means this unit cannot detect a crash at all; a substituted read is a
+  // bus that flaked once. Telling a demo audience "check the wiring" when the
+  // sensor was never there sends them looking for the wrong thing.
+  if (!motionSensorPresent()) {
+    Serial.println("  Sensor     NO MOTION SENSOR - crash detection is OFF");
+  } else if (motion.substituted) {
     Serial.println("  Sensor     READ FAILED - check the SDA/SCL wiring");
   }
 
@@ -110,9 +116,14 @@ static void printDetailedBlock(const MotionReading &motion,
     snprintf(gpsState, sizeof(gpsState), "searching/%dsat", max(getSatelliteCount(), 0));
   }
 
+  const char *sensorNote = !motionSensorPresent()
+                               ? "   NO MOTION SENSOR - crash detection is OFF"
+                           : sawStale ? "   STALE I2C READS - check SDA/SCL wiring"
+                                      : "";
+
   Serial.printf("\n[%7.1fs] temp %.1fC   net %s   power %s   gps %s%s\n",
                 millis() / 1000.0f, motion.tempC, net, powerStateName(), gpsState,
-                sawStale ? "   STALE I2C READS - check SDA/SCL wiring" : "");
+                sensorNote);
 
   Serial.printf("            accel  X %+7.2f  Y %+7.2f  Z %+7.2f   "
                 "|mag| %6.2f m/s2   peak %6.2f   %3.0f%% of %.0f\n",

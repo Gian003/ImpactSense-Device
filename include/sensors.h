@@ -25,3 +25,11 @@ void sensorsInit();
 void readMotion(MotionReading &out);
 void readCrashMetrics(float &totalAccel, float &totalGyro);
 int readBatteryPercent();
+
+// Whether the MPU6050 actually answered at boot.
+//
+// False means this unit CANNOT DETECT A CRASH. Off the bench, sensorsInit()
+// halts rather than let that happen; on the bench it carries on so the modem,
+// the GPS and the audio can be brought up while a replacement sensor is in the
+// post. Anything that reports device health should say so plainly.
+bool motionSensorPresent();

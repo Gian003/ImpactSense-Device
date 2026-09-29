@@ -1,0 +1,550 @@
+v:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x5F
+  Found device at 0x68
+  Found device at 0x6F
+  Found device at 0x74
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7D
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini not found - audio alerts disabled. Check SD card and wiring (RX=33, TX=32).
+MAX9814 mic ready on GPIO 35 (resting level 1610).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 47639][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 47657][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20661][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x5F
+  Found device at 0x68
+  Found device at 0x6F
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7D
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini not found - audio alerts disabled. Check SD card and wiring (RX=33, TX=32).
+MAX9814 mic ready on GPIO 35 (resting level 1741).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 47636][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 47654][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20660][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x30
+  Found device at 0x3F
+  Found device at 0x5F
+  Found device at 0x68
+  Found device at 0x6F
+  Found device at 0x74
+  Found device at 0x77
+  Found device at 0x7B
+  Found device at 0x7E
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini not found - audio alerts disabled. Check SD card and wiring (RX=33, TX=32).
+MAX9814 mic ready on GPIO 35 (resting level 1544).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 47637][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 47655][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20658][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x5F
+  Found device at 0x6F
+  Found device at 0x74
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7D
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini not found - audio alerts disabled. Check SD card and wiring (RX=33, TX=32).
+MAX9814 mic ready on GPIO 35 (resting level 1642).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 47633][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 47651][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20671][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x20
+  Found device at 0x2F
+  Found device at 0x38
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x5F
+  Found device at 0x6F
+  Found device at 0x74
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7D
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini ready.
+MAX9814 mic ready on GPIO 35 (resting level 4095).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 51185][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 51203][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20661][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x1E
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x5F
+  Found device at 0x6F
+  Found device at 0x74
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7C
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini ready.
+MAX9814 mic ready on GPIO 35 (resting level 4095).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 52186][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 52204][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+[ 20659][E][Wire.cpp:499] requestFrom(): i2cWriteReadNonStop returned Error 263
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+  Found device at 0x2F
+  Found device at 0x38
+  Found device at 0x3F
+  Found device at 0x50
+  Found device at 0x58
+  Found device at 0x5F
+  Found device at 0x68
+  Found device at 0x6C
+  Found device at 0x6F
+  Found device at 0x77
+  Found device at 0x7A
+  Found device at 0x7D
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini ready.
+MAX9814 mic ready on GPIO 35 (resting level 4095).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 51189][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 51207][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'
+Brownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   520][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   532][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   539][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   547][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
