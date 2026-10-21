@@ -19,7 +19,18 @@ static const char *UNPROVISIONED = "UNPROVISIONED";
 
 static String deviceCode;
 static String deviceModel;
-static String firmwareVersion;
+
+// firmware_version is NOT stored in NVS and is NOT typed in. It is stamped
+// into the binary at build time by inject_version.py, from `git describe`, so
+// what a unit reports is always the commit it is running. Typing it meant a
+// board could claim 2.0.1 while running anything at all, and nothing - here
+// or on the server - could tell.
+//
+// The fallback matters: a build from a source zip with no .git directory, or
+// on a machine without git, still has to compile.
+#ifndef FIRMWARE_VERSION
+#define FIRMWARE_VERSION "unknown"
+#endif
 
 // Kept out of printDeviceIdentity() and out of every log line: this is the
 // one value on the device that must never be readable from the outside.
@@ -38,12 +49,37 @@ static const unsigned long REQUESTS_PER_BOOT = 1000000UL;
 static unsigned long bootCounterBase = 0;
 static unsigned long requestsThisBoot = 0;
 
-static void saveDeviceIdentity(const String &code, const String &model, const String &firmware) {
+// No firmware argument: that field comes from the build now, so there is
+// nothing per-unit left to persist. The old "firmware" NVS key is left where
+// it is rather than deleted - nothing reads it, and erasing keys on boot is a
+// flash write nobody asked for.
+static void saveDeviceIdentity(const String &code, const String &model) {
   preferences.begin(NVS_NAMESPACE, false); // read-write
   preferences.putString("device_code", code);
   preferences.putString("model", model);
-  preferences.putString("firmware", firmware);
   preferences.end();
+}
+
+// Wipes this unit back to factory-blank so it enrols itself again.
+//
+// The alternative is erasing the whole flash, which needs the board in
+// download mode twice (erase, then re-upload) and takes the firmware with
+// it. This is the same outcome over serial, with the board left running.
+//
+// boot_no is deliberately NOT cleared. It feeds the request counter, and
+// re-enrolling a known MAC hands back the SAME signing secret - so a counter
+// restarting at zero would briefly accept a request captured before the
+// forget. Letting it keep climbing closes that, and costs nothing.
+static void clearDeviceIdentity() {
+  preferences.begin(NVS_NAMESPACE, false); // read-write
+  preferences.remove("device_code");
+  preferences.remove("model");
+  preferences.remove("sign_secret");
+  preferences.end();
+
+  deviceCode    = UNPROVISIONED;
+  deviceModel   = "";
+  signingSecret = "";
 }
 
 static void saveSigningSecret(const String &secret) {
@@ -56,7 +92,7 @@ static void printDeviceIdentity() {
   Serial.println("-- Current device identity --");
   Serial.printf("  device_code      : %s\n", deviceCode.c_str());
   Serial.printf("  model            : %s\n", deviceModel.length() ? deviceModel.c_str() : "(not set)");
-  Serial.printf("  firmware_version : %s\n", firmwareVersion.length() ? firmwareVersion.c_str() : "(not set)");
+  Serial.printf("  firmware_version : %s  (from the build, not editable)\n", FIRMWARE_VERSION);
   // Whether, never what. Printing the secret here would put it in every
   // screenshot and every serial log of a boot.
   Serial.printf("  signing secret   : %s\n",
@@ -68,7 +104,6 @@ void deviceIdentityInit() {
   preferences.begin(NVS_NAMESPACE, true); // read-only
   deviceCode      = preferences.getString("device_code", UNPROVISIONED);
   deviceModel     = preferences.getString("model", "");
-  firmwareVersion = preferences.getString("firmware", "");
   signingSecret   = preferences.getString("sign_secret", "");
   preferences.end();
 
@@ -115,9 +150,10 @@ void runProvisioningWindow() {
   Serial.println();
   Serial.println("===============================================");
   Serial.println(" PROVISIONING MODE - waiting for a command...");
-  Serial.println(" Type:  SET <device_code>,<model>,<firmware>");
+  Serial.println(" Type:  SET <device_code>,<model>");
   Serial.println("   or:  SHOW");
   Serial.println("   or:  SECRET <64 hex characters>");
+  Serial.println("   or:  FORGET          (wipe identity, re-enrol from scratch)");
   Serial.println(" then press Enter. Full instructions are in");
   Serial.println(" include/device_identity.h. No input needed to");
   Serial.println(" skip - the device boots normally on its own.");
@@ -227,18 +263,43 @@ void runProvisioningWindow() {
         if (code.length() == 0) {
           Serial.println("[Provision] device_code can't be blank - try again, e.g. SET IMP-042");
         } else {
-          saveDeviceIdentity(code, model, firmware);
-          deviceCode      = code;
-          deviceModel     = model;
-          firmwareVersion = firmware;
+          // Accepted and ignored rather than rejected: the three-field form
+          // is in the old instructions, on the TOC page and in people's
+          // muscle memory. Failing the whole command over a field that is now
+          // meaningless would be the wrong trade.
+          if (firmware.length()) {
+            Serial.printf("[Provision] Ignoring firmware \"%s\" - that field now comes from the\n",
+                          firmware.c_str());
+            Serial.printf("[Provision] build (%s) and cannot be set by hand.\n", FIRMWARE_VERSION);
+          }
+
+          saveDeviceIdentity(code, model);
+          deviceCode  = code;
+          deviceModel = model;
           Serial.println("[Provision] Saved.");
           printDeviceIdentity();
           Serial.println("[Provision] Still listening - reset the device (or wait for the "
                          "window to close) to start normal operation with this identity.");
         }
 
+      } else if (line.equalsIgnoreCase("FORGET")) {
+        // Deliberately two steps. SET overwrites a code, which is recoverable
+        // by typing it again; this throws away the signing secret, and a
+        // mistyped command should not be able to do that silently.
+        Serial.println("[Provision] FORGET erases this device code, model and signing secret.");
+        Serial.println("[Provision] The board then announces itself for enrolment on the next boot.");
+        Serial.println("[Provision] Its credentials are recoverable only if its MAC is on record.");
+        Serial.println("[Provision] To go ahead, type:  FORGET CONFIRM");
+
+      } else if (line.equalsIgnoreCase("FORGET CONFIRM")) {
+        clearDeviceIdentity();
+        Serial.println("[Provision] Identity erased. This unit is now UNPROVISIONED.");
+        Serial.println("[Provision] Open enrolment on the TOC device page, then reset this board");
+        Serial.println("[Provision] and it will announce itself.");
+        printDeviceIdentity();
+
       } else {
-        Serial.println("[Provision] Not recognized. Use:  SET <device_code>,<model>,<firmware>   or   SHOW");
+        Serial.println("[Provision] Not recognized. Use:  SET <device_code>,<model>   SHOW   SECRET <64 hex>   FORGET");
       }
 
       line = "";
@@ -310,5 +371,54 @@ String getDeviceModel() {
 }
 
 String getFirmwareVersion() {
-  return firmwareVersion;
+  return String(FIRMWARE_VERSION);
+}
+
+// ── automatic enrolment ──────────────────────────────────────────────────────
+
+bool deviceNeedsEnrolment() {
+  // A code without a secret counts as needing enrolment too. That unit can
+  // report, but only unsigned, and the server will accept unsigned reports
+  // claiming to be it from anyone — which is the gap the signing secret exists
+  // to close.
+  return deviceCode == UNPROVISIONED || deviceCode.length() == 0
+         || signingSecret.length() == 0;
+}
+
+bool applyEnrolledIdentity(const String &code, const String &model, const String &secret) {
+  String cleanCode   = code;   cleanCode.trim();
+  String cleanModel  = model;  cleanModel.trim();
+  String cleanSecret = secret; cleanSecret.trim(); cleanSecret.toLowerCase();
+
+  if (cleanCode.length() == 0) {
+    Serial.println("[Enrol] Server sent no device_code. Nothing written.");
+    return false;
+  }
+
+  // Same check the SECRET command applies to a pasted value. A truncated or
+  // malformed secret written to flash would produce signatures the server
+  // rejects, and the unit would look like a network fault rather than a
+  // provisioning one.
+  bool wellFormed = cleanSecret.length() == 64;
+  for (size_t i = 0; wellFormed && i < cleanSecret.length(); i++) {
+    char ch = cleanSecret[i];
+    wellFormed = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+  }
+
+  if (!wellFormed) {
+    Serial.printf("[Enrol] Server sent a malformed signing secret (%u chars). Nothing written.\n",
+                  (unsigned) cleanSecret.length());
+    return false;
+  }
+
+  // Both writes, then both in-memory values, so a power loss between them
+  // leaves flash consistent with itself rather than a code with no secret.
+  saveDeviceIdentity(cleanCode, cleanModel);
+  saveSigningSecret(cleanSecret);
+
+  deviceCode    = cleanCode;
+  deviceModel   = cleanModel;
+  signingSecret = cleanSecret;
+
+  return true;
 }

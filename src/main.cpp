@@ -41,6 +41,12 @@ void setup() {
   modemInit();          // brings up SIM800 for SMS, independent of WiFi/GPRS
   contactCacheInit();   // loads last-known emergency contact from flash
   ensureConnectivity(); // tries WiFi first, falls back to GSM
+
+  // Must come after connectivity and before anything that talks to the backend
+  // as a provisioned unit. Does nothing on a board that already has an
+  // identity, so this is inert on every boot after the first.
+  attemptDeviceEnrolment();
+
   refreshContactCache(); // fetch a fresh copy now if connectivity is up
 
   lastDeviceStatusAt = millis();

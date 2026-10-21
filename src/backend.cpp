@@ -8,6 +8,10 @@
 #include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
 #include <Preferences.h>
+// For WiFi.macAddress() in attemptDeviceEnrolment(). The MAC is burned in at
+// the factory and readable whether or not WiFi is associated, so this works
+// even on a unit that came up over GSM.
+#include <WiFi.h>
 
 // Persists a crash report that failed to send so it can be retried later,
 // including across a reboot/brownout (SIM800 TX bursts can brown out the
@@ -221,6 +225,18 @@ bool reportDeviceStatus() {
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
 
+  // Stamped into the binary from `git describe` at build time, so this is the
+  // commit the unit is actually running - not whatever someone typed into SET
+  // months ago. See inject_version.py.
+  //
+  // Sent on every heartbeat, not once per boot, even though it cannot change
+  // within one. Thirty-odd bytes buys a dashboard that corrects itself: sent
+  // once and that one request lost, the TOC would show the pre-reflash
+  // version indefinitely with nothing to reveal it. That is the opposite of
+  // the speed fields removed below, which were bytes that bought nothing at
+  // all because no one read them.
+  doc["firmware_version"] = getFirmwareVersion();
+
   // No position or speed here, deliberately.
   //
   // This used to attach latitude, longitude and speed_kph on any heartbeat
@@ -290,4 +306,114 @@ bool fetchEmergencyContact(String &riderName, String &contactName, String &conta
   contactName  = String(name);
   contactPhone = String(phone);
   return true;
+}
+
+// ── automatic enrolment ──────────────────────────────────────────────────────
+//
+// Asked for by the pre-final defence panel: device_code and model should be
+// assigned when the device connects, not typed into a serial monitor once per
+// unit. See device_identity.h for the identity half.
+//
+// Identification is by MAC address, because it is the only thing this board
+// has before it has an identity — device_code is precisely what is being
+// handed out, so it cannot also be what identifies the board asking for it.
+
+// How long to keep asking after the server says "seen you, not registered
+// yet". Long enough for an operator to find the board on the page and submit
+// the form; short enough that a unit powered on with nobody at the console
+// finishes booting rather than hanging.
+static const unsigned long ENROLMENT_WAIT_MS   = 90000;
+static const unsigned long ENROLMENT_RETRY_MS  = 5000;
+
+bool attemptDeviceEnrolment() {
+  if (!deviceNeedsEnrolment()) {
+    return false;
+  }
+
+  if (activeClient == nullptr) {
+    Serial.println("[Enrol] No data connection - cannot enrol. Use SET / SECRET over serial.");
+    return false;
+  }
+
+  String mac = WiFi.macAddress();
+  if (mac.length() == 0 || mac == "00:00:00:00:00:00") {
+    Serial.println("[Enrol] No MAC address available - cannot enrol.");
+    return false;
+  }
+
+  JsonDocument doc;
+  doc["mac_address"]      = mac;
+  doc["firmware_version"] = getFirmwareVersion();
+
+  String body;
+  serializeJson(doc, body);
+
+  Serial.println();
+  Serial.println("=========================================================");
+  Serial.printf (" ENROLLING - this unit has no identity yet.\n");
+  Serial.printf ("   MAC      : %s\n", mac.c_str());
+  Serial.printf ("   firmware : %s\n", getFirmwareVersion().c_str());
+  Serial.println("   Register it on the TOC device page. Open enrolment there");
+  Serial.println("   first, or this will be refused.");
+  Serial.println("=========================================================");
+
+  unsigned long startedAt = millis();
+
+  while (millis() - startedAt < ENROLMENT_WAIT_MS) {
+    int status = 0;
+    String response;
+
+    if (!httpPostJson("/api/device/announce", body, status, response)) {
+      Serial.println("[Enrol] Could not reach the backend. Retrying...");
+      delay(ENROLMENT_RETRY_MS);
+      continue;
+    }
+
+    // Closed window. No amount of retrying changes this, and hammering a
+    // credential endpoint after being refused is exactly the behaviour the
+    // window exists to prevent.
+    if (status == 403) {
+      Serial.println("[Enrol] Enrolment is CLOSED on the server.");
+      Serial.println("[Enrol] Open it on the TOC device page, then reset this board.");
+      return false;
+    }
+
+    if (status == 202) {
+      Serial.println("[Enrol] Announced. Waiting for an operator to register it...");
+      delay(ENROLMENT_RETRY_MS);
+      continue;
+    }
+
+    if (status != 200) {
+      Serial.printf("[Enrol] Unexpected response (HTTP %d). Giving up.\n", status);
+      return false;
+    }
+
+    JsonDocument reply;
+    if (deserializeJson(reply, response)) {
+      Serial.println("[Enrol] Server reply was not valid JSON. Giving up.");
+      return false;
+    }
+
+    const char* code   = reply["data"]["device_code"] | "";
+    const char* model  = reply["data"]["model"]       | "";
+    const char* secret = reply["data"]["secret"]      | "";
+
+    if (!applyEnrolledIdentity(String(code), String(model), String(secret))) {
+      return false;
+    }
+
+    Serial.println();
+    Serial.println("=========================================================");
+    Serial.printf (" ENROLLED as %s\n", getDeviceCode().c_str());
+    Serial.printf ("   model  : %s\n", getDeviceModel().c_str());
+    Serial.println("   Signing secret stored. Reports from this unit are signed.");
+    Serial.println("=========================================================");
+    Serial.println();
+    return true;
+  }
+
+  Serial.println("[Enrol] Nobody registered this board in time. Booting unprovisioned.");
+  Serial.println("[Enrol] Reset to try again, or use SET / SECRET over serial.");
+  return false;
 }

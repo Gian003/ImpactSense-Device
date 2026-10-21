@@ -25,7 +25,13 @@ const bool DEPLOYMENT_MODE = false;
 //   API_PORT           443 -> 80          (config.h)
 //   GSM_DATA_ENABLED   false -> true      (config.h)
 //   WiFi HTTP client   TLS -> plain       (connectivity.cpp, follows API_PORT)
-//   Boot provisioning  8 s -> ~0.3 s      (device_identity.cpp)
+//   Boot provisioning  20 s -> ~0.3 s     (device_identity.cpp)
+//                      ^ PROVISION_WINDOW_MS. This is the one with a safety
+//                        cost: every boot spends it not watching for a crash,
+//                        including the reboot after a brownout mid-ride. In
+//                        deployment mode the window only opens if a key is
+//                        held through reset, so the commands stay available
+//                        without the per-boot penalty.
 //
 // The rest of this file is the work that cannot be done by a flag, because it
 // needs changes outside this firmware.
@@ -190,13 +196,44 @@ const bool DEPLOYMENT_MODE = false;
 // every unit and plugging in USB. Past a handful of units, add OTA before
 // deploying rather than after.
 //
-// Provisioning runbook - per unit, in this order:
-//   1. Register the device_code in the admin panel (toc/devices -> Register
-//      New Device). The backend generates the pairing_key there.
-//   2. Flash, open Serial Monitor at 115200 (line ending: Newline), reset,
-//      and send  SET <device_code>,<model>,<firmware>  within the window.
-//   3. Send SHOW to confirm it saved.
-//   4. Rider pairs in the mobile app using the pairing_key from step 1.
+// Provisioning runbook - per unit. Prefer the first route; it is fewer steps
+// and cannot get the secret wrong. The full version, with the recovery cases,
+// is on the Device Management page under "How to register and set up a new
+// device".
+//
+// Route A - the board enrols itself (needs a data path to the backend):
+//   1. toc/devices -> Connect a Device -> "Enrol next device". Do this BEFORE
+//      powering the board; the window is 10 minutes.
+//   2. Flash and power the board. It announces itself by MAC and appears in
+//      the list.
+//   3. "Use this device" on its row, type the device_code printed on the unit,
+//      then Register Device.
+//   4. Nothing to type into the board - it collects its device_code, model
+//      AND signing secret by itself and prints "ENROLLED as <code>".
+//   5. Rider pairs in the mobile app using the pairing_key on that row.
+//
+// Route B - no data path on the board, so by hand:
+//   1. Register it in toc/devices with the device_code and the board's MAC
+//      (it prints "MAC : ..." on boot while unprovisioned; SHOW prints it any
+//      time). Without the MAC that unit can never enrol itself later.
+//   2. Flash, open Serial Monitor at 115200 (line ending: Newline), reset, and
+//      send  SET <device_code>  within the window. A third <firmware> field is
+//      accepted and ignored - that value comes from `git describe` at build
+//      time now.
+//   3. Send the SECRET line from that row ("Copy signing command" copies it
+//      whole). SKIPPING THIS LEAVES THE UNIT REPORTING UNSIGNED, which the
+//      server accepts from anyone claiming to be it.
+//   4. Send SHOW to confirm the code saved and the secret reads "stored".
+//   5. Rider pairs in the mobile app using the pairing_key from step 1.
+//
+// To recycle a board onto a different device_code:
+//   Edit the row's device_code in the admin panel, then send SET <new_code>.
+//   The signing secret survives, because SET writes only the code and model.
+//   Do NOT delete the row - that destroys the secret the board is holding.
+//
+// To return a board to blank so it enrols from scratch: send FORGET, then
+// FORGET CONFIRM. A board holding both a code and a secret never announces
+// itself, so this is the only way back onto route A short of erasing flash.
 //
 // ============================================================================
 // STEP 5 - DEEP SLEEP  [DEFERRED - read the cost before building it]

@@ -17,11 +17,15 @@
 //  3. Reset the board. On boot it prints its current identity and waits
 //     PROVISION_WINDOW_MS for one of:
 //
-//       SET <device_code>,<model>,<firmware_version>
-//           Saves to flash and uses it immediately. model and
-//           firmware_version are optional — only device_code is required.
-//             SET IMP-042,ImpactSense Pro X1,2.0.1
+//       SET <device_code>,<model>
+//           Saves to flash and uses it immediately. model is optional —
+//           only device_code is required.
+//             SET IMP-042,ImpactSense Pro X1
 //             SET IMP-043
+//
+//           A third field is still accepted and ignored, with a note saying
+//           so: the old three-field form is in people's muscle memory and
+//           failing the whole command over it would be the wrong trade.
 //
 //       SHOW
 //           Prints the saved identity without changing it.
@@ -36,9 +40,27 @@
 //     The pairing_key is a backend secret — this firmware never sees it; the
 //     rider enters it in the mobile app when pairing.
 //
-//  model / firmware_version are for local reference only (field debugging via
-//  SHOW). They are not sent to the backend — the model and firmware shown on
-//  the admin site come from what TOC staff typed into the registration form.
+//  model is for local reference only (field debugging via SHOW). It is not
+//  sent to the backend — the model shown on the admin site comes from what
+//  TOC staff typed into the registration form.
+//
+//  firmware_version is NOT typed in and is NOT stored in flash. It is stamped
+//  into the binary at build time from `git describe` (see inject_version.py,
+//  wired up by extra_scripts in platformio.ini), so what a unit reports is
+//  always the commit it is actually running:
+//
+//      6fe3c36            a clean build of that commit
+//      6fe3c36-dirty      built with uncommitted changes in the tree
+//      v1.2.0-3-gabc123   three commits past tag v1.2.0
+//
+//  The "-dirty" suffix is the useful part: when a unit misbehaves in the
+//  field it says whether the binary on it corresponds to anything in the
+//  repository. Typed by hand, this field could claim 2.0.1 while running
+//  anything at all, and nothing here or on the server could tell.
+//
+//  This is the first of the three fields the pre-final defence panel asked to
+//  have assigned automatically. device_code and model are the other two; they
+//  need a backend enrolment handshake, which this does not.
 
 // Loads the saved identity from flash. Call once, early in setup(), before
 // anything that talks to the backend.
@@ -51,6 +73,28 @@ void runProvisioningWindow();
 String getDeviceCode();
 String getDeviceModel();
 String getFirmwareVersion();
+
+// ── AUTOMATIC ENROLMENT ──────────────────────────────────────────────────────
+//
+// The pre-final defence panel asked for device_code, model and firmware to be
+// assigned automatically rather than typed into a serial monitor per unit.
+// firmware_version is handled at build time (above). The other two are
+// collected over the network, from a backend that identifies this board by the
+// one thing it has before it has an identity: its MAC address.
+//
+// See backend.h's attemptDeviceEnrolment() for the exchange itself. These two
+// are the identity side of it.
+
+// Whether this unit still needs enrolling: no device_code, or a code but no
+// signing secret. A unit that has both is left alone — enrolment is not
+// something to repeat on every boot.
+bool deviceNeedsEnrolment();
+
+// Writes credentials handed back by the server and uses them immediately, so
+// the rest of setup() runs as a provisioned unit rather than waiting for a
+// reboot. Returns false if the server sent something unusable, in which case
+// nothing is written — a half-applied identity is worse than none.
+bool applyEnrolledIdentity(const String &code, const String &model, const String &secret);
 
 // ── PROVING IT IS THIS DEVICE ────────────────────────────────────────────────
 //
