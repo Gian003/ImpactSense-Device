@@ -151,11 +151,17 @@ const bool GSM_DATA_ENABLED = DEPLOYMENT_MODE;
 // actual AT communication so boot and crash-handling aren't stuck waiting on
 // timeouts against a dead modem while testing everything else. Flip back to
 // true once the module is properly powered and registering.
-const bool SIM800L_ENABLED = true;
+// 2026-11-17: OFF for WiFi-based demos. The modem answers and reads the SIM,
+// but will not register (signal 99 on a Globe SIM, so 2G exists - suspect the
+// u.FL connector or local coverage). Leaving it on costs ~30 s of boot waiting
+// on registration timeouts and prints a screen of errors. Nothing in the crash
+// path depends on it while WiFi is up: the incident goes over WiFi and the
+// backend sends the SMS and the TOC call. Turn back ON for offline testing.
+const bool SIM800L_ENABLED = false;
 
 // ===== Emergency voice call =====
 // TOC / dispatch number the device calls when a crash is confirmed.
-const char *const EMERGENCY_HOTLINE_NUMBER = "09652145185";
+const char *const EMERGENCY_HOTLINE_NUMBER = "09456725632";
 
 // Where the device texts the crash details when it could not reach the
 // backend. Defaults to the hotline above, which is a mobile number.
@@ -349,6 +355,24 @@ const int VOICE_SCORE_TARGET = 200;
 // 0002.mp3 (TRACK_CRASH_DETECTED) - it plays through a speaker next to the
 // mic, and a prompt that outlasts this would be heard as the rider replying.
 const unsigned long VOICE_CANCEL_GRACE_MS = 5000;
+
+// 2026-11-17: OFF for bench and demo work.
+//
+// The gating below assumes the microphone's main enemy is the device's own
+// noise - the alarm track and the buzzer. In a room of people watching a
+// demonstration the enemy is the room, and a stray conversation inside the
+// 30 s window cancels the crash before it ever reports. That looks like a
+// failure of crash detection when it is the opposite: voice cancel working
+// exactly as designed, on the wrong voice.
+//
+// MIC_VOICE_THRESHOLD has also never been validated on a real helmet, so
+// there is no measured basis yet for trusting it in a noisy room.
+//
+// Turn back ON once the threshold has been tuned at Stage 8. micInit() still
+// runs and still reports its resting level either way, so the microphone is
+// still proven at boot. The cancel button is unaffected and remains the
+// rider's way out.
+const bool VOICE_CANCEL_ENABLED = false;
 
 // After the buzzer or motor switches off, how long before the mic is trusted
 // again - a piezo and an ERM both keep ringing briefly.

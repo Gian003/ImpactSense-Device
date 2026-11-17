@@ -86,6 +86,13 @@ static void soundBuzzerPattern() {
 // Every rule below fails toward reporting: when in doubt, don't listen. The
 // cancel button is never gated, so a conscious rider always has a way out.
 static bool voiceMayCountNow(unsigned long windowStart) {
+  // Switched off entirely for bench and demo work - see VOICE_CANCEL_ENABLED.
+  // Gated here rather than at the call site so there is one place that decides
+  // whether the microphone is allowed to speak for the rider.
+  if (!VOICE_CANCEL_ENABLED) {
+    return false;
+  }
+
   unsigned long now = millis();
 
   // The loudest moments of a crash - the impact, scraping, the bike going
@@ -224,10 +231,14 @@ void handleCrash(float totalAccel, float totalGyro) {
   // Said out loud because otherwise it looks broken in a demo: someone speaks
   // straight away, nothing happens, and it reads as a failed feature rather
   // than the deliberate grace period it is.
-  snprintf(line, sizeof(line),
-           "or speak once the alert has finished (voice is ignored for %lu s).",
-           VOICE_CANCEL_GRACE_MS / 1000);
-  telemetryDetail(line);
+  if (VOICE_CANCEL_ENABLED) {
+    snprintf(line, sizeof(line),
+             "or speak once the alert has finished (voice is ignored for %lu s).",
+             VOICE_CANCEL_GRACE_MS / 1000);
+    telemetryDetail(line);
+  } else {
+    telemetryDetail("Voice cancel is OFF - the button is the only way to stop this.");
+  }
 
   audioPlay(TRACK_CRASH_DETECTED);
   resetVoiceScore(); // start fresh so a previous event's score doesn't carry over

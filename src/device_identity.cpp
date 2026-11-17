@@ -1,4 +1,5 @@
 #include "device_identity.h"
+#include "audio.h"
 #include "config.h"
 
 #include <Preferences.h>
@@ -127,6 +128,119 @@ void deviceIdentityInit() {
   }
 }
 
+// What each track is supposed to be, printed alongside every PLAY so the
+// command verifies the card's mapping rather than merely proving the speaker
+// makes a noise.
+static const char *trackDescription(int track) {
+  switch (track) {
+    case TRACK_STARTUP:        return "startup - 'system is now active, stay safe'";
+    case TRACK_CRASH_DETECTED: return "CRASH ALARM - ~30 s alarm tone over the cancel prompt";
+    case TRACK_REPORTING:      return "reporting to the command centre";
+    case TRACK_REPORT_SENT:    return "report sent";
+    case TRACK_CANCELLED:      return "cancelled - nothing was reported";
+    case TRACK_MANUAL_SOS:     return "manual SOS";
+    case TRACK_VOICE_CANCEL:   return "cancelled by voice";
+    case TRACK_CALL_TOC:       return "played into the hotline call to the TOC";
+    default:                   return "unknown";
+  }
+}
+
+// PLAY <1-8> - hear one track on demand, during the provisioning window only.
+//
+// The DFPlayer indexes by FAT write order rather than by filename, so a card
+// whose files were copied across all at once maps the numbers to the wrong
+// clips. Nothing else on the bench catches that: track 1 plays at every boot
+// whatever the ordering, and track 2 - the crash alarm, and with no buzzer
+// fitted the only thing that warns a conscious rider before a report goes out
+// - otherwise plays only during a real crash. On a bench unit with no motion
+// sensor fitted it could not be heard at all.
+//
+// Confined to the provisioning window, so it cannot fire mid-ride.
+static void handlePlayCommand(const String &line) {
+  String arg = line.substring(4);
+  arg.trim();
+
+  // audioInit() runs after this window in setup(), so on the first PLAY the
+  // DFPlayer has not been spoken to yet. Calling it again later is harmless -
+  // it just re-begins the SoftwareSerial and re-reads dfpReady.
+  if (!audioReady()) {
+    audioInit();
+  }
+  if (!audioReady()) {
+    Serial.println("[Provision] No DFPlayer. Check the SD card, and RX=33 / TX=32.");
+    return;
+  }
+
+  if (arg.length() == 0) {
+    Serial.println("[Provision] PLAY <n> plays one track. PLAY STOP ends it early.");
+    Serial.println("[Provision] PLAY INFO asks the module what it can see.");
+    Serial.println("[Provision] PLAY ROOT <n> plays by card index instead of from /mp3/.");
+    Serial.println("[Provision] PLAY VOL <0-30> changes volume for testing.");
+    for (int t = TRACK_STARTUP; t <= TRACK_CALL_TOC; t++) {
+      Serial.printf("[Provision]   %d  %s\n", t, trackDescription(t));
+    }
+    return;
+  }
+
+  if (arg.equalsIgnoreCase("STOP")) {
+    audioStop();
+    Serial.println("[Provision] Stopped.");
+    return;
+  }
+
+  if (arg.equalsIgnoreCase("INFO")) {
+    audioReport();
+    return;
+  }
+
+  // PLAY VOL <0-30> - rules volume out in one command. DFP_VOLUME is capped at
+  // 20 for the 0.5 W speaker, so anything above that is for the test only.
+  if (arg.length() > 3 && arg.substring(0, 4).equalsIgnoreCase("VOL ")) {
+    String rest = arg.substring(4);
+    rest.trim();
+    int level = rest.toInt();
+    audioSetVolume(level);
+    Serial.printf("[Provision] Volume set to %d. Play a track to hear it.\n", level);
+    if (level > DFP_VOLUME) {
+      Serial.printf("[Provision] Above the configured %d - fine for a test, not for the\n", DFP_VOLUME);
+      Serial.println("[Provision] 0.5 W speaker long term. Reset returns it to normal.");
+    }
+    return;
+  }
+
+  // PLAY ROOT <n> - the same clip addressed the other way. If this makes a
+  // sound when PLAY <n> does not, the files are in the card's root rather than
+  // in /mp3/, and the fix is the card layout, not the wiring.
+  bool byIndex = false;
+  if (arg.length() > 4 && arg.substring(0, 5).equalsIgnoreCase("ROOT ")) {
+    byIndex = true;
+    arg = arg.substring(5);
+    arg.trim();
+  }
+
+  int track = arg.toInt(); // non-numeric gives 0, which the range check catches
+  if (track < TRACK_STARTUP || track > TRACK_CALL_TOC) {
+    Serial.printf("[Provision] Track must be %d-%d. PLAY on its own lists them.\n",
+                  TRACK_STARTUP, TRACK_CALL_TOC);
+    return;
+  }
+
+  Serial.printf("[Provision] Playing %d%s - expect: %s\n", track,
+                byIndex ? " by card index" : " from /mp3/", trackDescription(track));
+  Serial.println("[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the");
+  Serial.println("[Provision] filename, so check the naming first. Copy order is a fallback.");
+
+  if (byIndex) {
+    audioPlayIndex(track);
+  } else {
+    audioPlay(track);
+  }
+
+  // The module answers an impossible request with an error frame rather than
+  // silence, so surface it instead of leaving the bench guessing.
+  audioPollMessages();
+}
+
 void runProvisioningWindow() {
   // In the field nobody is holding a serial cable, and this window is eight
   // seconds of no crash detection on every single boot - including the reboot
@@ -194,6 +308,11 @@ void runProvisioningWindow() {
         line = "";
         continue;
       }
+
+      // Matched on the first word, case-insensitively, so a doubled space or a
+      // missing one cannot turn a valid command into "Not recognized".
+      String upper = line;
+      upper.toUpperCase();
 
       if (line.equalsIgnoreCase("SHOW")) {
         printDeviceIdentity();
@@ -282,6 +401,9 @@ void runProvisioningWindow() {
                          "window to close) to start normal operation with this identity.");
         }
 
+      } else if (upper.startsWith("PLAY")) {
+        handlePlayCommand(line);
+
       } else if (line.equalsIgnoreCase("FORGET")) {
         // Deliberately two steps. SET overwrites a code, which is recoverable
         // by typing it again; this throws away the signing secret, and a
@@ -299,7 +421,12 @@ void runProvisioningWindow() {
         printDeviceIdentity();
 
       } else {
-        Serial.println("[Provision] Not recognized. Use:  SET <device_code>,<model>   SHOW   SECRET <64 hex>   FORGET");
+        // Echo exactly what arrived, with its length. A command that looks
+        // right on screen but lost or gained a character is otherwise
+        // indistinguishable from one that was typed wrongly.
+        Serial.printf("[Provision] Not recognized: \"%s\" (%u chars)\n",
+                      line.c_str(), (unsigned) line.length());
+        Serial.println("[Provision] Use:  SET <device_code>,<model>   SHOW   SECRET <64 hex>   PLAY <1-8>   PLAY INFO   FORGET");
       }
 
       line = "";
