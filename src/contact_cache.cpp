@@ -1,5 +1,6 @@
 #include "contact_cache.h"
 #include "backend.h"
+#include "redact.h"
 
 #include <Preferences.h>
 
@@ -16,8 +17,11 @@ void contactCacheInit() {
   preferences.end();
 
   if (cachedContactPhone.length() > 0) {
+    // Masked: this line is in every boot log, and the boot logs are kept as
+    // files (see redact.h). What is left is enough to confirm the right
+    // contact loaded, which is the only reason to print it.
     Serial.printf("Loaded cached emergency contact from flash: rider=%s phone=%s\n",
-                  cachedRiderName.c_str(), cachedContactPhone.c_str());
+                  cachedRiderName.c_str(), maskPhone(cachedContactPhone).c_str());
   } else {
     Serial.println("No emergency contact cached yet.");
   }
@@ -39,7 +43,8 @@ void refreshContactCache() {
   preferences.end();
 
   Serial.printf("Emergency contact cache refreshed: rider=%s contact=%s phone=%s\n",
-                cachedRiderName.c_str(), contactName.c_str(), cachedContactPhone.c_str());
+                cachedRiderName.c_str(), contactName.c_str(),
+                maskPhone(cachedContactPhone).c_str());
 }
 
 String getCachedRiderName() {

@@ -1,69 +1,122 @@
-PI_FAST_FLASH_BOOT)
-configsip: 0, SPIWP:0xee
-clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
-mode:DIO, clock div:2
-load:0x3fff0030,len:1184
-load:0x40078000,len:13232
-load:0x40080400,len:3028
-entry 0x400805e4
-
-ImpactSense - Full Firmware (Modules 1-7)
-
-===============================================
- PROVISIONING MODE - waiting for a command...
- Type:  SET <device_code>,<model>
-   or:  SHOW
-   or:  SECRET <64 hex characters>
-   or:  FORGET          (wipe identity, re-enrol from scratch)
- then press Enter. Full instructions are in
- include/device_identity.h. No input needed to
- skip - the device boots normally on its own.
+PI_FAST_FLASH_BOOT)
+
+configsip: 0, SPIWP:0xee
+
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+
+mode:DIO, clock div:2
+
+load:0x3fff0030,len:1184
+
+load:0x40078000,len:13232
+
+load:0x40080400,len:3028
+
+entry 0x400805e4
+
+
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+
+
+===============================================
+
+ PROVISIONING MODE - waiting for a command...
+
+ Type:  SET <device_code>,<model>
+
+   or:  SHOW
+
+   or:  SECRET <64 hex characters>
+
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+
+ then press Enter. Full instructions are in
+
+ include/device_identity.h. No input needed to
+
+ skip - the device boots normally on its own.
+
  Waiting 20s for a first keystroke, then 90s
- between them. Nothing typed? It just continues.
-===============================================
--- Current device identity --
+ between them. Nothing typed? It just continues.
+
+===============================================
+
+-- Current device identity --
+
   device_code      : IMP-003
   model            : ImpactSense Pro X1
   firmware_version : 9c678c8-dirty  (from the build, not editable)
   signing secret   : stored (reports are signed)
-[Provision] Window closed - continuing startup with the identity above.
-
-MPU6050 found and initialized.
+[Provision] Window closed - continuing startup with the identity above.
+
+
+
+MPU6050 found and initialized.
+
 NEO-6M GPS connected - receiving NMEA (1 bytes).
   No fix yet (0 satellite(s) in view). This is normal indoors:
-  the wiring is proven, the sky is not. A cold start outdoors
-  takes 2-15 minutes. Until then the stub location is sent with
-  location_verified false, which is honest rather than wrong.
-[Audio] raw reply: 7E FF 06 0C 00 00 00 FE EF EF
-[Audio] *** THAT IS OUR OWN COMMAND, ECHOED BACK - NOT A REPLY. ***
-[Audio] GPIO 33 is hearing GPIO 32 directly, so the module's TX has
-[Audio] never reached us. Nothing it appeared to 'say' was real.
-[Audio] Almost always: both jumpers landed on the SAME header pin,
-[Audio] or two adjacent pins are bridged. RX and TX are pins 2 and 3,
-[Audio] right next to each other on an unlabelled header.
-[Audio] Check: meter continuity GPIO 32 to GPIO 33 - it must NOT beep.
-[Audio] Then GPIO 32 -> module pin 2 (RX), GPIO 33 -> module pin 3 (TX).
-DFPlayer Mini not found - the serial pair is MISWIRED (see above).
-  Audio alerts are disabled until GPIO 32 and 33 are separated.
+  the wiring is proven, the sky is not. A cold start outdoors
+
+  takes 2-15 minutes. Until then the stub location is sent with
+
+  location_verified false, which is honest rather than wrong.
+
+[Audio] raw reply: 7E FF 06 0C 00 00 00 FE EF EF
+
+[Audio] *** THAT IS OUR OWN COMMAND, ECHOED BACK - NOT A REPLY. ***
+
+[Audio] GPIO 33 is hearing GPIO 32 directly, so the module's TX has
+
+[Audio] never reached us. Nothing it appeared to 'say' was real.
+
+[Audio] Almost always: both jumpers landed on the SAME header pin,
+
+[Audio] or two adjacent pins are bridged. RX and TX are pins 2 and 3,
+
+[Audio] right next to each other on an unlabelled header.
+
+[Audio] Check: meter continuity GPIO 32 to GPIO 33 - it must NOT beep.
+
+[Audio] Then GPIO 32 -> module pin 2 (RX), GPIO 33 -> module pin 3 (TX).
+
+DFPlayer Mini not found - the serial pair is MISWIRED (see above).
+
+  Audio alerts are disabled until GPIO 32 and 33 are separated.
+
 MAX9814 mic ready on GPIO 35 (resting level 1361).
-SIM800L disabled in config.h - skipping modem init.
-Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=09633337350
-Connecting to WiFi 'BIDA_dFDEEF'........
+SIM800L disabled in config.h - skipping modem init.
+
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'........
+
 WiFi connected. Device IP: 192.168.1.7
-Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=09633337350
-Setup complete. Monitoring for crashes...
-
----------------- LIVE SENSOR READINGS ----------------
- accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
-        sits near 9.8 - that is gravity, not movement.
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+
+
+---------------- LIVE SENSOR READINGS ----------------
+
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+
+        sits near 9.8 - that is gravity, not movement.
+
         Crash needs |mag| > 25.0 AND gyro > 200.
         Precaution trips at 15.0 or 100.
- gyro   per-axis X/Y/Z and |mag| in deg/s.
- peak   highest seen since the previous block, so a spike
-        between prints is not missed.
- stale  I2C read failed; last good magnitudes substituted.
-------------------------------------------------------
-
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+
+ peak   highest seen since the previous block, so a spike
+
+        between prints is not missed.
+
+ stale  I2C read failed; last good magnitudes substituted.
+
+------------------------------------------------------
+
+
+
 
 [   39.7s] temp 34.8C   net wifi   power active   gps NO DATA
             accel  X   -7.92  Y   +0.26  Z   +4.06   |mag|   8.91 m/s2   peak   8.91    36% of 25
@@ -124,7 +177,8 @@ Setup complete. Monitoring for crashes...
 [   61.9s] temp 34.8C   net wifi   power active   gps NO DATA
             accel  X   -8.09  Y   +0.37  Z   +3.71   |mag|   8.91 m/s2   peak   9.02    36% of 25
             gyro   X    -0.1  Y    +1.8  Z    +0.8   |mag|    2.0 deg/s  peak   81.8     1% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -147,7 +201,8 @@ Setup complete. Monitoring for crashes...
 [   69.8s] temp 34.8C   net wifi   power active   gps searching/0sat
             accel  X   -7.70  Y   +2.12  Z   +3.93   |mag|   8.90 m/s2   peak   9.09    36% of 25
             gyro   X    +5.5  Y    -3.0  Z   +14.7   |mag|   16.0 deg/s  peak   16.7     8% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -170,7 +225,8 @@ Setup complete. Monitoring for crashes...
 [   77.7s] temp 34.8C   net wifi   power active   gps searching/0sat
             accel  X   -1.11  Y   -0.99  Z   +8.42   |mag|   8.55 m/s2   peak  10.18    34% of 25
             gyro   X   +23.3  Y    +3.5  Z    -2.9   |mag|   23.8 deg/s  peak   79.0    12% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -185,7 +241,8 @@ Setup complete. Monitoring for crashes...
 [   82.6s] temp 34.8C   net wifi   power active   gps searching/0sat
             accel  X   -6.85  Y   +5.55  Z   +2.82   |mag|   9.26 m/s2   peak   9.55    37% of 25
             gyro   X    +4.4  Y   +20.5  Z   +14.3   |mag|   25.4 deg/s  peak   61.3    13% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -200,7 +257,8 @@ Setup complete. Monitoring for crashes...
 [   87.9s] temp 34.7C   net wifi   power active   gps searching/0sat
             accel  X   +3.82  Y   +7.99  Z   -0.69   |mag|   8.88 m/s2   peak  18.62    36% of 25
             gyro   X  +343.3  Y  -341.6  Z  +187.0   |mag|  519.2 deg/s  peak  544.6   260% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -215,7 +273,8 @@ Setup complete. Monitoring for crashes...
 [   93.0s] temp 34.7C   net wifi   power active   gps searching/0sat
             accel  X  -12.98  Y   -0.16  Z   +3.57   |mag|  13.46 m/s2   peak  20.31    54% of 25
             gyro   X  +126.5  Y  -228.9  Z  +210.8   |mag|  335.9 deg/s  peak  617.4   168% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -230,27 +289,31 @@ Setup complete. Monitoring for crashes...
 [   98.2s] temp 34.7C   net wifi   power active   gps searching/0sat
             accel  X   -8.30  Y   +0.04  Z   +3.88   |mag|   9.16 m/s2   peak  26.40    37% of 25
             gyro   X  -298.5  Y  +246.4  Z  -254.6   |mag|  463.3 deg/s  peak  586.8   232% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":185000002,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":87,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":"2026-11-17T03:31:13.000000Z","created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-17T04:19:39.000000Z"}}
-Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=09633337350
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
 
 [  123.9s] temp 34.6C   net wifi   power active   gps searching/0sat
             accel  X   -5.09  Y   -1.95  Z   +4.47   |mag|   7.05 m/s2   peak  18.60    28% of 25
             gyro   X  -119.5  Y   -84.0  Z   +12.3   |mag|  146.6 deg/s  peak  648.4    73% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
 [  125.5s] temp 34.6C   net wifi   power active   gps searching/0sat
             accel  X   -6.34  Y  -32.53  Z   -2.34   |mag|  33.23 m/s2   peak  33.23   133% of 25
             gyro   X  -104.3  Y   -68.6  Z  -242.0   |mag|  272.3 deg/s  peak  394.4   136% of 200
-
+
+
 >> CRASH DETECTED
    Rider has 30 seconds to cancel - press the button at any time,
    or speak once the alert has finished (voice is ignored for 5 s).
-
+
+
 >> CANCELLED - the rider spoke, so they are conscious.
    Nothing reported. No SMS, no call, no incident record.
 
@@ -273,7 +336,8 @@ Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama ph
 [  146.7s] temp 34.6C   net wifi   power active   gps searching/0sat
             accel  X   -8.33  Y   +2.38  Z   +2.83   |mag|   9.11 m/s2   peak   9.11    36% of 25
             gyro   X    -1.2  Y    +1.2  Z    -1.2   |mag|    2.1 deg/s  peak    4.9     1% of 200
-
+
+
 >> PRECAUTION - unstable riding detected. Warning the rider.
    Below crash level, so nothing is reported. Buzzer only.
 
@@ -309,7 +373,7 @@ Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama ph
             accel  X   -8.41  Y   +1.45  Z   +2.95   |mag|   9.03 m/s2   peak   9.12    36% of 25
             gyro   X    -1.0  Y    +1.0  Z    -0.6   |mag|    1.6 deg/s  peak    5.4     1% of 200
 Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":185000004,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":87,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":"2026-11-17T03:31:13.000000Z","created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-17T04:20:39.000000Z"}}
-Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=09633337350
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
 
 [  184.1s] temp 34.5C   net wifi   power active   gps searching/0sat
             accel  X   -9.17  Y   +1.48  Z   +1.45   |mag|   9.40 m/s2   peak   9.40    38% of 25

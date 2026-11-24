@@ -133,14 +133,19 @@ void deviceIdentityInit() {
 // makes a noise.
 static const char *trackDescription(int track) {
   switch (track) {
-    case TRACK_STARTUP:        return "startup - 'system is now active, stay safe'";
-    case TRACK_CRASH_DETECTED: return "CRASH ALARM - ~30 s alarm tone over the cancel prompt";
-    case TRACK_REPORTING:      return "reporting to the command centre";
-    case TRACK_REPORT_SENT:    return "report sent";
-    case TRACK_CANCELLED:      return "cancelled - nothing was reported";
-    case TRACK_MANUAL_SOS:     return "manual SOS";
-    case TRACK_VOICE_CANCEL:   return "cancelled by voice";
-    case TRACK_CALL_TOC:       return "played into the hotline call to the TOC";
+    // Kept in step with docs/AUDIO_SCRIPT.md, which holds the lines verbatim.
+    // These strings are what PLAY prints, so they are how you check the right
+    // clip is in the right slot rather than only that the speaker works.
+    case TRACK_STARTUP:        return "startup - 'ImpactSense is active. Ride safe.'";
+    case TRACK_CRASH_DETECTED: return "CRASH ALARM - ~30 s, alarm tone + 'press the button to cancel'";
+    case TRACK_REPORTING:      return "'No response. Sending your location now...'";
+    case TRACK_REPORT_SENT:    return "'Your alert is on its way...' (true whether or not the backend answered)";
+    case TRACK_CANCELLED:      return "'Cancelled. Nothing was reported. Ride safe.'";
+    case TRACK_MANUAL_SOS:     return "'S O S activated... This cannot be cancelled.'";
+    case TRACK_VOICE_CANCEL:   return "'Cancelled. Good to hear you.' - only plays if VOICE_CANCEL_ENABLED";
+    case TRACK_CALL_TOC:       return "spoken TO the dispatcher down the hotline call, not to the rider";
+    case TRACK_ONLINE:         return "'ImpactSense is online...' - assurance cue, optional clip";
+    case TRACK_VOLUME_SET:     return "'Volume set.' - played at the new level after the app changes it";
     default:                   return "unknown";
   }
 }
@@ -176,7 +181,7 @@ static void handlePlayCommand(const String &line) {
     Serial.println("[Provision] PLAY INFO asks the module what it can see.");
     Serial.println("[Provision] PLAY ROOT <n> plays by card index instead of from /mp3/.");
     Serial.println("[Provision] PLAY VOL <0-30> changes volume for testing.");
-    for (int t = TRACK_STARTUP; t <= TRACK_CALL_TOC; t++) {
+    for (int t = TRACK_FIRST; t <= TRACK_LAST; t++) {
       Serial.printf("[Provision]   %d  %s\n", t, trackDescription(t));
     }
     return;
@@ -219,9 +224,9 @@ static void handlePlayCommand(const String &line) {
   }
 
   int track = arg.toInt(); // non-numeric gives 0, which the range check catches
-  if (track < TRACK_STARTUP || track > TRACK_CALL_TOC) {
+  if (track < TRACK_FIRST || track > TRACK_LAST) {
     Serial.printf("[Provision] Track must be %d-%d. PLAY on its own lists them.\n",
-                  TRACK_STARTUP, TRACK_CALL_TOC);
+                  TRACK_FIRST, TRACK_LAST);
     return;
   }
 
@@ -299,11 +304,26 @@ void runProvisioningWindow() {
       window = PROVISION_IDLE_MS;
 
       if (c != '\n' && c != '\r') {
-        line += c;
+        // The monitor's send_on_enter filter does no line editing: a typo
+        // fixed with Backspace arrives as the typo plus a backspace byte, and
+        // a reset can leave a stray 0x00/0xFF in the buffer. Either one made
+        // a correctly-typed-looking FORGET come back "Not recognized". Apply
+        // the edit here and drop anything else that isn't printable.
+        if (c == '\b' || c == 0x7F) {
+          if (line.length() > 0) line.remove(line.length() - 1);
+        } else if (c == '\t') {
+          line += ' ';
+        } else if (c >= 0x20 && c <= 0x7E) {
+          line += c;
+        }
         continue;
       }
 
       line.trim();
+      // "FORGET  CONFIRM" with a doubled space is the same command.
+      while (line.indexOf("  ") >= 0) {
+        line.replace("  ", " ");
+      }
       if (line.length() == 0) {
         line = "";
         continue;

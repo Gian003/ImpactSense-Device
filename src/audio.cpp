@@ -13,6 +13,26 @@ static SoftwareSerial dfpSerial(DFP_RX_PIN, DFP_TX_PIN);
 static DFRobotDFPlayerMini dfPlayer;
 static bool dfpReady = false;
 
+// Whether the module acknowledges commands. False on the clones that play
+// perfectly well but never send a frame back - worth remembering, because on
+// those every query times out and a timeout must not be reported as a fault.
+static bool dfpAckMode = true;
+
+// The volume the module is supposed to be at. Not necessarily DFP_VOLUME:
+// the rider sets this from the app (see applyRemoteVolume in backend.cpp), so
+// a resync after a module reset has to restore THEIR number, not the
+// compiled-in default they overrode.
+static int sVolume = DFP_VOLUME;
+
+// When anything last started playing, and when an EMERGENCY clip last
+// started. Assurance cues consult both: they must not talk over the crash
+// alarm (long quiet window), and must not cut off the startup announcement
+// either (short one). A clip interrupted mid-word is worse than no clip.
+static unsigned long sLastPlayAt = 0;
+static bool sHasPlayed = false;
+static unsigned long sLastEmergencyPlayAt = 0;
+static bool sHasPlayedEmergency = false;
+
 // The library's begin() returns true ONLY if the module reports a card online
 // within 2 s of a reset (DFRobotDFPlayerMini.cpp, the readType() check). So a
 // false lumps together three faults that need completely different fixes:
@@ -65,9 +85,13 @@ static bool isOwnEcho(const uint8_t *buf, int len) {
 // answer every serial command politely while playing nothing at all. That is
 // indistinguishable from a dead speaker from the outside.
 static void configureModule() {
+  // Set first, because everything below it is subject to it. The library's
+  // own default is 500 ms - see AUDIO_QUERY_TIMEOUT_MS for why that is paid
+  // twice per verified play and why it is the bulk of the delay.
+  dfPlayer.setTimeOut(AUDIO_QUERY_TIMEOUT_MS);
   dfPlayer.outputDevice(DFPLAYER_DEVICE_SD);
   delay(200);
-  dfPlayer.volume(DFP_VOLUME);
+  dfPlayer.volume(sVolume);
   delay(50);
 }
 
@@ -150,10 +174,22 @@ static int countReplyBytes(unsigned long windowMs) {
 
 void audioInit() {
   dfpSerial.begin(9600);
+
+  // Interrupts off while a frame is clocked out. Without this the module
+  // stops accepting commands as soon as the radio is busy, because the
+  // Arduino loop gets preempted mid-byte and the bit timing comes out
+  // wrong. AUDIO_PRECISE_TX in config.h has the full reasoning; it is the
+  // difference between a helmet that speaks on the bench and one that
+  // speaks on the road.
+  if (AUDIO_PRECISE_TX) {
+    dfpSerial.enableIntTx(false);
+  }
+
   delay(200); // DFPlayer needs a moment after power-on before it acks begin()
 
   if (dfPlayer.begin(dfpSerial)) {
     dfpReady = true;
+    dfpAckMode = true;
     configureModule();
     Serial.println("DFPlayer Mini ready.");
     return;
@@ -198,25 +234,233 @@ void audioInit() {
   // diagnosis above is printed first and not replaced by a "ready" line.
   dfPlayer.begin(dfpSerial, false, false);
   dfpReady = true;
+  dfpAckMode = false;
   configureModule();
 }
 
-void audioSetVolume(int level) {
+void audioResync() {
   if (!dfpReady) return;
+  configureModule();
+  Serial.printf("[Audio] resynced: SD output, volume %d.\n", sVolume);
+}
+
+bool audioLinkAlive() {
+  if (!dfpReady) return false;
+
+  // readVolume() is the cheapest query with a definite right answer: we set
+  // that number ourselves, so a different one is evidence rather than noise.
+  int vol = dfPlayer.readVolume();
+
+  if (vol < 0) {
+    if (dfpAckMode) {
+      Serial.println("[Audio] No reply to a volume query. Either the module reset,");
+      Serial.println("[Audio] or replies are no longer getting back on GPIO 33.");
+    } else {
+      Serial.println("[Audio] No reply to a volume query - expected on this module:");
+      Serial.println("[Audio] it came up in no-ACK mode and never answers queries.");
+      Serial.println("[Audio] That is not a fault, and it says nothing about playback.");
+    }
+    return false;
+  }
+
+  if (vol != sVolume) {
+    // A module that answers but disagrees has been power-cycled under us -
+    // almost always its supply sagging while the radio transmits, which is
+    // what bulk capacitance across its VCC and GND is for. Deliberately not
+    // named as "the boost output": on the bench the module is fed from the
+    // ESP32's 5V/VIN pin instead, and the cap belongs at the module either
+    // way - naming one supply sends the reader to a part that is not there.
+    Serial.printf("[Audio] Module reports volume %d, we set %d - it has RESET.\n",
+                  vol, sVolume);
+    return false;
+  }
+
+  return true;
+}
+
+void audioSetVolume(int level) {
   if (level < 0)  level = 0;
   if (level > 30) level = 30;
+
+  // Remembered even when the module is absent, so a volume the rider chose
+  // while the DFPlayer was unplugged is still the volume it comes up at.
+  sVolume = level;
+  if (!dfpReady) return;
+
   dfPlayer.volume(level);
   delay(50);
 }
 
+// Whether a clip is one of the emergency ones - the 2-8 band, played to a
+// rider who may be lying on a road. Named because three separate decisions
+// now turn on it and they must not drift apart.
+static bool isEmergencyTrack(int track) {
+  return track >= TRACK_CRASH_DETECTED && track <= TRACK_CALL_TOC;
+}
+
+// Says how long a play took, but only when that is news.
+static void reportIfSlow(int track, unsigned long began) {
+  unsigned long took = millis() - began;
+  if (took < AUDIO_SLOW_PLAY_WARN_MS) return;
+  Serial.printf("[Audio] Track %d: the command took %lu ms to get out.\n",
+                track, took);
+  Serial.println("[Audio] That is the serial link waiting, not the clip. If the clip");
+  Serial.println("[Audio] itself seems late or absent, this number is where to look.");
+}
+
 void audioPlay(int track) {
   if (!dfpReady) return;
+
+  const unsigned long began = millis();
+
   // 0x12 - play /mp3/000N.mp3, which is the layout BRINGUP_GUIDE.md and
   // ASSEMBLY_GUIDE.md both specify. This used to call play(), which is 0x03:
   // an index across every file on the card in FAT order. With the clips in
   // /mp3/ those two disagree, and a index that does not resolve makes the
   // module answer FileMismatch and play nothing - audible as simple silence.
   dfPlayer.playMp3Folder(track);
+
+  sLastPlayAt = millis();
+  sHasPlayed = true;
+
+  // Tracks 1, 9 and 10 are reassurance; 2-8 are the ones a rider is lying
+  // on a road listening to. The second kind earns a much longer silence.
+  if (isEmergencyTrack(track)) {
+    sLastEmergencyPlayAt = millis();
+    sHasPlayedEmergency = true;
+  }
+
+  // What verification is worth paying for.
+  //
+  // dfpAckMode false does not mean "a module that is merely quiet": it means
+  // begin() never got the card-online frame, which this firmware treats as a
+  // clone that answers nothing - audioLinkAlive() says so in those words.
+  // On one of those, readState() can only ever time out, so verifying costs
+  // the full AUDIO_QUERY_TIMEOUT_MS twice and can never return an answer.
+  // That was pure latency on exactly the boards most likely to need help.
+  //
+  // The assurance cues are skipped for the opposite reason: they are
+  // optional by definition, and a cue is not worth half a second of a loop
+  // that also has a crash to notice.
+  const bool worthVerifying = AUDIO_VERIFY_PLAY && dfpAckMode && isEmergencyTrack(track);
+
+  if (!worthVerifying) {
+    reportIfSlow(track, began);
+    return;
+  }
+
+  // Did it actually start? A command frame that arrived corrupted is
+  // discarded without complaint, so silence is the only symptom - and for
+  // track 2 that silence is the whole warning a conscious rider gets.
+  delay(AUDIO_PLAY_VERIFY_MS);
+  int state = dfPlayer.readState(); // 0 stopped, 1 playing, 2 paused, -1 no reply
+
+  if (state == 1 || state == 2) {
+    reportIfSlow(track, began);
+    return; // playing: nothing to do
+  }
+
+  if (state < 0) {
+    // No answer. That is not evidence it failed - see AUDIO_VERIFY_PLAY.
+    reportIfSlow(track, began);
+    return;
+  }
+
+  Serial.printf("[Audio] Track %d did not start (state %d). Resending once.\n",
+                track, state);
+  audioResync();
+  dfPlayer.playMp3Folder(track);
+  audioPollMessages(); // surfaces FileMismatch if the clip is simply absent
+}
+
+void audioWaitForClip(unsigned long maxMs) {
+  if (!dfpReady) return;
+  if (!sHasPlayed) return; // nothing has ever played, so nothing to wait for
+
+  // Starts out true only on a module that answers queries. dfpAckMode false
+  // means begin() never got the card-online frame, which this firmware reads
+  // as a clone that answers nothing at all - see audioLinkAlive().
+  bool canAsk = dfpAckMode;
+
+  while (true) {
+    const unsigned long elapsed = millis() - sLastPlayAt;
+
+    // The ceiling is checked first and applies on every path, so no reply,
+    // a stuck module and a very long clip all end the wait at the same place.
+    if (elapsed >= maxMs) return;
+
+    if (canAsk && elapsed >= AUDIO_CLIP_SETTLE_MS) {
+      const int state = dfPlayer.readState(); // 0 stopped, 1 playing, 2 paused
+      if (state == 0) return;                 // it says it has finished
+      if (state < 0) canAsk = false;          // gone quiet - fall back below
+    }
+
+    // No usable answer available, so time it instead. Note this is reached
+    // both by a clone that never answered and by a module that stopped
+    // answering midway: neither earns an early return, because the clip is
+    // probably still playing and cutting it off is the fault being fixed.
+    if (!canAsk && elapsed >= AUDIO_CLIP_NOMINAL_MS) return;
+
+    delay(100); // a query every 100 ms is plenty on a bit-banged link
+  }
+}
+
+bool audioAssuranceCue(int track) {
+  if (!AUDIO_ASSURANCE_ENABLED) return false;
+  if (!dfpReady) return false;
+
+  if (sHasPlayedEmergency &&
+      millis() - sLastEmergencyPlayAt < AUDIO_ASSURANCE_QUIET_MS) {
+    // An alert is in progress or has just finished. Good news can wait;
+    // cutting off "press the button to cancel" to say "online" cannot.
+    return false;
+  }
+
+  if (sHasPlayed && millis() - sLastPlayAt < AUDIO_CUE_MIN_GAP_MS) {
+    // Something else is probably still being spoken - most often the
+    // startup announcement, moments earlier in setup().
+    return false;
+  }
+
+  audioPlay(track);
+  return true;
+}
+
+void audioOnlineCueTick(bool online) {
+  if (!AUDIO_ASSURANCE_ENABLED) return;
+
+  // One announcement per spell of being online, not one per loop: the cue
+  // belongs to the moment the helmet BECOMES reachable, which is the moment
+  // the rider learns something they did not already know.
+  static bool announced = false;
+  static unsigned long lastCueAt = 0;
+  static bool everCued = false;
+
+  if (!online) {
+    announced = false; // armed again, so a recovery mid-ride is announced
+    return;
+  }
+
+  if (announced) return;
+
+  if (everCued && millis() - lastCueAt < AUDIO_ONLINE_CUE_COOLDOWN_MS) {
+    // Inside the cooldown. Counted as handled rather than left pending, so
+    // a hotspot flapping at the edge of range does not queue the sentence
+    // up to be blurted out the instant the cooldown expires.
+    announced = true;
+    return;
+  }
+
+  // Deliberately NOT latched on a refusal. audioAssuranceCue() declines
+  // while an alert or the startup clip is still being spoken, and the right
+  // answer there is to say it a moment later rather than to lose it. The
+  // retry costs two comparisons per loop until it lands.
+  if (!audioAssuranceCue(TRACK_ONLINE)) return;
+
+  announced = true;
+  lastCueAt = millis();
+  everCued = true;
+  Serial.println("[Audio] Online cue played - the rider knows reports can go out.");
 }
 
 void audioPlayIndex(int track) {
@@ -256,9 +500,15 @@ void audioReport() {
     return;
   }
 
+  // readFileCounts() can take over a second on a card with many files, and
+  // the running timeout is deliberately short for playback. Raised just for
+  // these three queries, then put back - otherwise this command reports a
+  // slow card as a dead link, which is the mistake it exists to prevent.
+  dfPlayer.setTimeOut(AUDIO_REPORT_TIMEOUT_MS);
   int files = dfPlayer.readFileCounts();
   int state = dfPlayer.readState();
   int vol   = dfPlayer.readVolume();
+  dfPlayer.setTimeOut(AUDIO_QUERY_TIMEOUT_MS);
 
   Serial.printf("[Audio] files visible: %d   state: %d   volume: %d (configured %d)\n",
                 files, state, vol, DFP_VOLUME);

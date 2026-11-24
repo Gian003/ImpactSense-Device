@@ -1,0 +1,160 @@
+PI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+MPU6050 found and initialized.
+NEO-6M GPS connected - receiving NMEA (1 bytes).
+  No fix yet (0 satellite(s) in view). This is normal indoors:
+  the wiring is proven, the sky is not. A cold start outdoors
+  takes 2-15 minutes. Until then the stub location is sent with
+  location_verified false, which is honest rather than wrong.
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+MAX9814 mic ready on GPIO 35 (resting level 1088).
+SIM800L disabled in config.h - skipping modem init.
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'........
+WiFi connected. Device IP: 192.168.1.11
+[Audio] Module reports volume 2, we set 20 - it has RESET.
+[Audio] See above. If it says RESET, that is the 5 V rail sagging
+[Audio] when the radio transmits - fit the 1000 uF across the boost
+[Audio] output. Resyncing so playback carries on meanwhile.
+[Audio] resynced: SD output, volume 20.
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+---------------- LIVE SENSOR READINGS ----------------
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+        sits near 9.8 - that is gravity, not movement.
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+ peak   highest seen since the previous block, so a spike
+        between prints is not missed.
+ stale  I2C read failed; last good magnitudes substituted.
+------------------------------------------------------
+
+Bench console is on: type HELP for the button and crash simulations.
+  CRASH sends nothing. BTN cancels. Both work while the alarm sounds.
+
+[   41.1s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.14  Y   -5.36  Z   -6.23   |mag|  10.89 m/s2   peak  10.89    44% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -1.2   |mag|    1.8 deg/s  peak    1.8     1% of 200
+[Audio] Track 9 did not start (state 30). Resending once.
+[Audio] resynced: SD output, volume 20.
+[Audio] module says: type 4, value 2
+[Audio] Online cue played - the rider knows reports can go out.
+
+[   42.7s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.13  Y   -5.39  Z   -6.25   |mag|  10.91 m/s2   peak  10.93    44% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.8   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   44.3s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.15  Y   -5.37  Z   -6.27   |mag|  10.92 m/s2   peak  10.94    44% of 25
+            gyro   X    -0.8  Y    +0.9  Z    -0.9   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   45.9s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.13  Y   -5.36  Z   -6.26   |mag|  10.90 m/s2   peak  10.93    44% of 25
+            gyro   X    -0.8  Y    +1.0  Z    -0.6   |mag|    1.4 deg/s  peak    1.7     1% of 200
+
+[   47.5s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.14  Y   -5.37  Z   -6.28   |mag|  10.92 m/s2   peak  10.94    44% of 25
+            gyro   X    -0.8  Y    +1.2  Z    -0.7   |mag|    1.6 deg/s  peak    1.8     1% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   49.7s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.38  Y   -5.08  Z   -6.18   |mag|  10.88 m/s2   peak  11.38    44% of 25
+            gyro   X    -0.3  Y    -0.3  Z    -0.2   |mag|    0.5 deg/s  peak  125.8     0% of 200
+
+[   51.2s] temp 32.3C   net wifi   power active   gps NO DATA
+            accel  X   +7.30  Y   -5.36  Z   -6.06   |mag|  10.90 m/s2   peak  11.45    44% of 25
+            gyro   X    +6.3  Y    +5.1  Z    -0.9   |mag|    8.1 deg/s  peak   58.4     4% of 200
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+[Provision] Playing 1 from /mp3/ - expect: startup - 'ImpactSense is active. Ride safe.'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 2 from /mp3/ - expect: CRASH ALARM - ~30 s, alarm tone + 'press the button to cancel'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 3 from /mp3/ - expect: 'No response. Sending your location now...'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 4 from /mp3/ - expect: 'Your alert is on its way...' (true whether or not the backend answered)
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Track must be 1-10. PLAY on its own lists them.

@@ -1,0 +1,295 @@
+PI_FAST_FLASH_BOOT)
+
+configsip: 0, SPIWP:0xee
+
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+
+mode:DIO, clock div:2
+
+load:0x3fff0030,len:1184
+
+load:0x40078000,len:13232
+
+load:0x40080400,len:3028
+
+entry 0x400805e4
+
+
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+
+
+===============================================
+
+ PROVISIONING MODE - waiting for a command...
+
+ Type:  SET <device_code>,<model>
+
+   or:  SHOW
+
+   or:  SECRET <64 hex characters>
+
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+
+ then press Enter. Full instructions are in
+
+ include/device_identity.h. No input needed to
+
+ skip - the device boots normally on its own.
+
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+
+===============================================
+
+-- Current device identity --
+
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+
+
+MPU6050 found and initialized.
+
+NEO-6M GPS connected - receiving NMEA (1 bytes).
+  No fix yet (0 satellite(s) in view). This is normal indoors:
+  the wiring is proven, the sky is not. A cold start outdoors
+
+  takes 2-15 minutes. Until then the stub location is sent with
+
+  location_verified false, which is honest rather than wrong.
+
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+
+[Audio] The module can see the card, so the card is not the fault.
+
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+
+  Suspect, in this order:
+
+   1. No microSD card seated, or the card is not FAT32.
+
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+
+MAX9814 mic ready on GPIO 35 (resting level 20).
+SIM800L disabled in config.h - skipping modem init.
+
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'.........
+
+WiFi connected. Device IP: 192.168.1.11
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+
+
+---------------- LIVE SENSOR READINGS ----------------
+
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+
+        sits near 9.8 - that is gravity, not movement.
+
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+
+ peak   highest seen since the previous block, so a spike
+
+        between prints is not missed.
+
+ stale  I2C read failed; last good magnitudes substituted.
+
+------------------------------------------------------
+
+
+
+
+[   41.7s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.18  Y   -7.95  Z   -5.69   |mag|  10.63 m/s2   peak  10.63    43% of 25
+            gyro   X    -1.0  Y    +1.2  Z    -0.5   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+[   43.3s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.21  Y   -7.94  Z   -5.67   |mag|  10.63 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.7  Y    +1.0  Z    -1.0   |mag|    1.6 deg/s  peak    1.9     1% of 200
+
+[   44.8s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.18  Y   -7.98  Z   -5.69   |mag|  10.65 m/s2   peak  10.72    43% of 25
+            gyro   X    -0.7  Y    +1.0  Z    -0.3   |mag|    1.3 deg/s  peak    1.7     1% of 200
+
+[   46.4s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.18  Y   -7.99  Z   -5.67   |mag|  10.66 m/s2   peak  10.69    43% of 25
+            gyro   X    -1.1  Y    +1.3  Z    -0.4   |mag|    1.7 deg/s  peak    2.1     1% of 200
+
+[   48.0s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.34  Y   -7.92  Z   -5.70   |mag|  10.68 m/s2   peak  10.68    43% of 25
+            gyro   X    -1.3  Y    +1.2  Z    -1.7   |mag|    2.5 deg/s  peak    5.9     1% of 200
+
+[   49.6s] temp 35.7C   net wifi   power active   gps NO DATA
+            accel  X   +4.16  Y   -8.00  Z   -5.75   |mag|  10.69 m/s2   peak  10.69    43% of 25
+            gyro   X    -1.0  Y    +1.2  Z    -0.9   |mag|    1.8 deg/s  peak    2.0     1% of 200
+
+[   51.2s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.25  Y   -7.95  Z   -5.73   |mag|  10.68 m/s2   peak  10.75    43% of 25
+            gyro   X    -0.9  Y    +1.2  Z    -0.9   |mag|    1.8 deg/s  peak    6.2     1% of 200
+
+[   52.8s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.27  Y   -7.93  Z   -5.72   |mag|  10.67 m/s2   peak  10.68    43% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -1.2   |mag|    1.8 deg/s  peak    1.8     1% of 200
+
+[   54.4s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.27  Y   -7.92  Z   -5.70   |mag|  10.66 m/s2   peak  10.68    43% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.6   |mag|    1.5 deg/s  peak    1.7     1% of 200
+
+[   56.0s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.92  Z   -5.72   |mag|  10.66 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.6   |mag|    1.5 deg/s  peak    1.9     1% of 200
+
+[   57.6s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.25  Y   -7.93  Z   -5.70   |mag|  10.65 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.9  Y    +1.2  Z    -0.9   |mag|    1.7 deg/s  peak    1.8     1% of 200
+
+[   59.1s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.92  Z   -5.70   |mag|  10.65 m/s2   peak  10.68    43% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.2   |mag|    1.4 deg/s  peak    1.9     1% of 200
+
+[   60.7s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.93  Z   -5.73   |mag|  10.67 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   62.3s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.94  Z   -5.74   |mag|  10.69 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.8     1% of 200
+
+[   63.9s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.25  Y   -7.93  Z   -5.71   |mag|  10.66 m/s2   peak  10.70    43% of 25
+            gyro   X    -0.8  Y    +1.0  Z    -0.9   |mag|    1.5 deg/s  peak    4.0     1% of 200
+
+[   65.5s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.95  Z   -5.71   |mag|  10.67 m/s2   peak  10.68    43% of 25
+            gyro   X    -0.8  Y    +1.1  Z    -0.7   |mag|    1.5 deg/s  peak    1.7     1% of 200
+
+[   67.1s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.25  Y   -7.93  Z   -5.71   |mag|  10.66 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.4   |mag|    1.4 deg/s  peak    1.9     1% of 200
+
+[   68.7s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.26  Y   -7.95  Z   -5.71   |mag|  10.67 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -1.0   |mag|    1.8 deg/s  peak    1.8     1% of 200
+
+[   70.3s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.25  Y   -7.92  Z   -5.71   |mag|  10.65 m/s2   peak  10.69    43% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.9   |mag|    1.6 deg/s  peak    1.8     1% of 200
+
+[   71.9s] temp 35.6C   net wifi   power active   gps NO DATA
+            accel  X   +4.39  Y   -8.05  Z   -5.26   |mag|  10.57 m/s2   peak  10.95    42% of 25
+            gyro   X    -6.9  Y    +9.6  Z   -19.0   |mag|   22.4 deg/s  peak   22.4    11% of 200
+
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+ets Jul 29 2019 12:21:46
+
+
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+
+configsip: 0, SPIWP:0xee
+
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+
+mode:DIO, clock div:2
+
+load:0x3fff0030,len:1184
+
+load:0x40078000,len:13232
+
+load:0x40080400,len:3028
+
+entry 0x400805e4
+
+
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+
+
+===============================================
+
+ PROVISIONING MODE - waiting for a command...
+
+ Type:  SET <device_code>,<model>
+
+   or:  SHOW
+
+   or:  SECRET <64 hex characters>
+
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+
+ then press Enter. Full instructions are in
+
+ include/device_identity.h. No input needed to
+
+ skip - the device boots normally on its own.
+
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+
+===============================================
+
+-- Current device identity --
+
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+
+[Audio] The module can see the card, so the card is not the fault.
+
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+
+  Suspect, in this order:
+
+   1. No microSD card seated, or the card is not FAT32.
+
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+
+[Provision] Playing 1 from /mp3/ - expect: startup - 'ImpactSense is active. Ride safe.'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+
+[Provision] filename, so check the naming first. Copy order is a fallback.
+
+[Audio] ERROR on the serial link - frames are arriving corrupted.
+
+[Audio] Usually a long or noisy wire on GPIO 32/33, or a weak ground.
+
+[Provision] Playing 2 from /mp3/ - expect: CRASH ALARM - ~30 s, alarm tone + 'press the button to cancel'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+
+[Provision] filename, so check the naming first. Copy order is a fallback.
+
+[Audio] module says: type 5, value 4
+[Provision] Playing 3 from /mp3/ - expect: 'No response. Sending your location now...'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+
+[Provision] filename, so check the naming first. Copy order is a fallback.
+
+[Audio] module says: type 5, value 3

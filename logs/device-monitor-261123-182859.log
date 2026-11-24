@@ -1,0 +1,539 @@
+PI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+MPU6050 found and initialized.
+NEO-6M GPS connected - receiving NMEA (1 bytes).
+  No fix yet (0 satellite(s) in view). This is normal indoors:
+  the wiring is proven, the sky is not. A cold start outdoors
+  takes 2-15 minutes. Until then the stub location is sent with
+  location_verified false, which is honest rather than wrong.
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+MAX9814 mic ready on GPIO 35 (resting level 4095).
+SIM800L disabled in config.h - skipping modem init.
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'.........
+WiFi connected. Device IP: 192.168.1.11
+[Audio] Module reports volume 2, we set 20 - it has RESET.
+[Audio] See above. If it says RESET, that is the 5 V rail sagging
+[Audio] when the radio transmits - fit the 1000 uF across the boost
+[Audio] output. Resyncing so playback carries on meanwhile.
+[Audio] resynced: SD output, volume 20.
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+---------------- LIVE SENSOR READINGS ----------------
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+        sits near 9.8 - that is gravity, not movement.
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+ peak   highest seen since the previous block, so a spike
+        between prints is not missed.
+ stale  I2C read failed; last good magnitudes substituted.
+------------------------------------------------------
+
+Bench console is on: type HELP for the button and crash simulations.
+  CRASH sends nothing. BTN cancels. Both work while the alarm sounds.
+
+[   42.0s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +3.34  Y   -9.19  Z   -2.39   |mag|  10.07 m/s2   peak  10.07    40% of 25
+            gyro   X    -0.8  Y    +1.0  Z    -0.5   |mag|    1.4 deg/s  peak    1.4     1% of 200
+[Audio] Online cue played - the rider knows reports can go out.
+
+[   43.5s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +3.33  Y   -9.19  Z   -2.39   |mag|  10.06 m/s2   peak  10.09    40% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.7   |mag|    1.4 deg/s  peak    1.7     1% of 200
+
+[   45.1s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +3.34  Y   -9.21  Z   -2.42   |mag|  10.09 m/s2   peak  10.10    40% of 25
+            gyro   X    -0.8  Y    +0.9  Z    -0.8   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   46.7s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +3.33  Y   -9.20  Z   -2.40   |mag|  10.07 m/s2   peak  10.09    40% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -1.1   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   48.2s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +6.62  Y   -6.14  Z   +2.18   |mag|   9.29 m/s2   peak  14.51    37% of 25
+            gyro   X    -5.5  Y   -20.4  Z   +11.8   |mag|   24.2 deg/s  peak  134.0    12% of 200
+
+[   49.8s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +6.17  Y   -6.08  Z   +5.23   |mag|  10.12 m/s2   peak  15.85    40% of 25
+            gyro   X   -15.5  Y   +70.2  Z   -65.8   |mag|   97.5 deg/s  peak  467.9    49% of 200
+
+[   51.4s] temp 32.9C   net wifi   power active   gps NO DATA
+            accel  X   +3.63  Y   -4.32  Z   -0.35   |mag|   5.66 m/s2   peak  15.36    23% of 25
+            gyro   X   +81.7  Y  -229.5  Z  -164.5   |mag|  293.9 deg/s  peak  421.2   147% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   53.4s] temp 32.8C   net wifi   power active   gps NO DATA
+            accel  X   +6.37  Y   -7.53  Z   +2.45   |mag|  10.16 m/s2   peak  16.80    41% of 25
+            gyro   X    -6.4  Y   +29.0  Z    -2.8   |mag|   29.9 deg/s  peak  370.0    15% of 200
+
+[   54.9s] temp 32.8C   net wifi   power active   gps NO DATA
+            accel  X   +3.14  Y   -0.12  Z   +7.93   |mag|   8.53 m/s2   peak  15.53    34% of 25
+            gyro   X   -90.3  Y   -82.0  Z   +95.5   |mag|  154.9 deg/s  peak  859.1    77% of 200
+
+[   56.5s] temp 32.8C   net wifi   power active   gps NO DATA   STALE I2C READS - check SDA/SCL wiring
+            accel  X   +3.99  Y   -3.66  Z   +7.52   |mag|   9.27 m/s2   peak  17.34    37% of 25
+            gyro   X   -28.3  Y  +137.4  Z   +55.5   |mag|  150.8 deg/s  peak  728.9    75% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+Bownout detector was triggered
+
+ets Jul 29 2019 12:21:46
+
+rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+ets Jul 29 2019 12:21:46
+
+rst:0x3 (SW_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+ets Jul 29 2019 12:21:46
+
+rst:0x3 (SW_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x02,q_drv:0x00,d_drv:0x03,cs0_drv:0x02,hd_drv:0x01,wp_drv:0x01
+mode:DOUT, clock div:2
+load:0x3fff0030,len:1184
+load:0x512782a1,len:-2130824258
+1150 mmu set 00010000, pos 00010000
+1150 mmu set 00020000, pos 00020000
+1150 mmu set 00030000, pos 00030000
+1150 mmu set 00040000, pos 00040000
+1150 mmu set 00050000, pos 00050000
+1150 mmu set 00060000, pos 00060000
+1150 mmu set 00070000, pos 00070000
+1150 mmu set 00080000, pos 00080000
+1150 mmu set 00090000, pos 00090000
+1150 mmu set 000a0000, pos 000a0000
+1150 mmu set 000b0000, pos 000b0000
+1150 mmu set 000c0000, pos 000c0000
+1150 mmu set 000d0000, pos 000d0000
+1150 mmu set 000e0000, pos 000e0000
+1150 mmu set 000f0000, pos 000f0000
+1150 mmu set 00100000, pos 00100000
+1150 mmu set 00110000, pos 00110000
+1150 mmu set 00120000, pos 00120000
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+ets Jul 29 2019 12:21:46
+
+rst:0x3 (SW_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x51078200,len:144314
+1150 mmu set 00010000, pos 00010000
+1150 mmu set 00020000, pos 00020000
+load:0x57cf5ffb,len:1475207166
+1150 mmu set 00030000, pos 00030000
+1150 mmu set 00040000, pos 00040000
+1150 mmu set 00050000, pos 00050000
+1150 mmu set 00060000, pos 00060000
+1150 mmu set 00070000, pos 00070000
+1150 mmu set 00080000, pos 00080000
+1150 mmu set 00090000, pos 00090000
+1150 mmu set 000a0000, pos 000a0000
+1150 mmu set 000b0000, pos 000b0000
+1150 mmu set 000c0000, pos 000c0000
+1150 mmu set 000d0000, pos 000d0000
+1150 mmu set 000e0000, pos 000e0000
+1150 mmu set 000f0000, pos 000f0000
+1150 mmu set 00100000, pos 00100000
+1150 mmu set 00110000, pos 00110000
+1150 mmu set 00120000, pos 00120000
+1150 mmu set 00130000, pos 00130000
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0x7fef7ffd
+invalid header: 0xffff7fff
+invalid header: 0x756b03e9
+invalid header: 0x7f6b2bed
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0x7d6b23ed
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffff7ffd
+invalid header: 0x7fef7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7fff7ffd
+invalid header: 0x7fff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0x7fef3ffd
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0x7fef3ffd
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7fef7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7fef7ffd
+invalid header: 0xffff7ffd
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0x7fef2fed
+invalid header: 0xffff7ffd
+invalid header: 0x7f6f2fed
+invalid header: 0x7f6b2fed
+invalid header: 0xffff7fff
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0x7fef2fed
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7f6b2fed
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7fef2fed
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0x7fef3ffd
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0x7fef3ffd
+invalid header: 0x7f6b2fed
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7ffd
+invalid header: 0x7fef3fed
+invalid header: 0x7fef7ffd
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0x7f6f2fed
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0x7fef2fed
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0x7f6b2fed
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0x7d6b2bed
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0x7f6f2ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7ffd
+invalid header: 0x7d6b2bed
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffff7ffd
+invalid header: 0xffff7ffd
+invalid header: 0xffff7fff
+invalid header: 0xffff7fff
+invalid header: 0x7f6f2ffd
+invalid header: 0xffff7ffd
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffffffff
+invalid header: 0xffff7fff
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+invalid header: 0xffff7ffd
+configsip: 0, SPIWP:0xef
+clk_drv:0x02,q_drv:0x00,d_drv:0x03,cs0_drv:0x02,hd_drv:0x01,wp_drv:0x05
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x552782a1,len:-2130824258
+1150 mmu set 00010000, pos 00010000
+1150 mmu set 00020000, pos 00020000
+1150 mmu set 00030000, pos 00030000
+1150 mmu set 00040000, pos 00040000
+1150 mmu set 00050000, pos 00050000
+1150 mmu set 00060000, pos 00060000
+1150 mmu set 00070000, pos 00070000
+1150 mmu set 00080000, pos 00080000
+1150 mmu set 00090000, pos 00090000
+1150 mmu set 000a0000, pos 000a0000
+1150 mmu set 000b0000, pos 000b0000
+1150 mmu set 000c0000, pos 000c0000
+1150 mmu set 000d0000, pos 000d0000
+1150 mmu set 000e0000, pos 000e0000
+1150 mmu set 000f0000, pos 000f0000
+1150 mmu set 00100000, pos 00100000
+1150 mmu set 00110000, pos 00110000
+1150 mmu set 00120000, pos 00120000
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:SLOW_RD, clock div:2
+load:0x3fff0330,len:7472302
+1150 mmu set 00010000, pos 00010000
+1150 mmu set 00020000, pos 00020000
+1150 mmu set 00030000, pos 00030000
+1150 mmu set 00040000, pos 00040000
+1150 mmu set 00050000, pos 00050000
+1150 mmu set 00060000, pos 00060000
+1150 mmu set 00070000, pos 00070000
+1150 mmu set 00080000, pos 00080000
+1150 mmu set 00090000, pos 00090000
+1150 mmu set 000a0000, pos 000a0000
+1150 mmu set 000b0000, pos 000b0000
+1150 mmu set 000c0000, pos 000c0000
+1150 mmu set 000d0000, pos 000d0000
+1150 mmu set 000e0000, pos 000e0000
+ets Jul 29 2019 12:21:46
+
+rst:0x7 (TG0WDT_SYS_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4

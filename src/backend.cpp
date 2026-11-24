@@ -1,3 +1,4 @@
+#include "audio.h"      // audioSetVolume(), for the rider-set speaker volume
 #include "backend.h"
 #include "config.h"
 #include "connectivity.h"
@@ -213,6 +214,48 @@ void retryPendingCrashReport() {
   clearPendingCrashReport();
 }
 
+// Reads speaker_volume out of a device status response and applies it.
+//
+// Silent and harmless when the field is absent, malformed, or unchanged: an
+// older backend, a truncated body or a repeated value must never cost the
+// heartbeat its success, because the heartbeat is also how the dashboard
+// knows this unit is alive.
+static void applyRemoteVolume(const String &response) {
+  JsonDocument doc;
+  if (deserializeJson(doc, response)) return;          // not JSON - ignore
+
+  JsonVariant value = doc["data"]["speaker_volume"];
+  if (value.isNull() || !value.is<int>()) return;      // field absent - ignore
+
+  int wanted = value.as<int>();
+  if (wanted < 0 || wanted > 30) return;               // out of range - ignore
+
+  // Only speak up when it actually changes. This runs every 60 s, and a log
+  // line per heartbeat would bury everything else in the monitor.
+  static int lastApplied = -1;
+  if (wanted == lastApplied) return;
+
+  bool first = (lastApplied < 0);
+  lastApplied = wanted;
+  audioSetVolume(wanted);
+  Serial.printf("Speaker volume set to %d by the rider's app.\n", wanted);
+
+  // Say it back, at the new level. The rider moved a slider in an app and
+  // then put their phone away; without this the only confirmation is the
+  // next crash alarm, which is a poor time to discover the setting was too
+  // quiet. Hearing the confirmation AT the chosen volume is the test.
+  //
+  // Skipped at 0 - there is nothing to hear, and a silent confirmation of
+  // silence would read as a failure. Skipped on the first heartbeat after a
+  // boot too: that is the device learning the stored value, not the rider
+  // changing it, and the helmet has just finished announcing itself.
+  if (wanted == 0) {
+    Serial.println("Volume is 0 - no confirmation clip, because nothing would be heard.");
+  } else if (!first) {
+    audioAssuranceCue(TRACK_VOLUME_SET);
+  }
+}
+
 bool reportDeviceStatus() {
   ensureConnectivity();
   if (activeClient == nullptr) {
@@ -261,6 +304,21 @@ bool reportDeviceStatus() {
   }
 
   Serial.printf("Device status HTTP %d: %s\n", status, response.c_str());
+
+  // The rider's chosen speaker volume rides back on this same response.
+  //
+  // No extra request, no polling loop, no push channel: the heartbeat is
+  // already made every 60 s while riding, and the backend already returns
+  // the whole device record. Carrying the setting on a request that happens
+  // anyway costs nothing, and means a helmet that is out of signal simply
+  // keeps the last volume it knew rather than falling silent or resetting.
+  //
+  // Up to 60 s to take effect while riding, up to 5 minutes when idle - the
+  // app says so rather than pretending the slider moved the speaker.
+  if (status == 200) {
+    applyRemoteVolume(response);
+  }
+
   return status == 200;
 }
 

@@ -6,6 +6,8 @@
 #include "contact_cache.h"
 #include "device_identity.h"
 #include "audio.h"
+#include "button.h"
+#include "dev_console.h"
 #include "mic.h"
 #include "sensors.h"
 #include "telemetry.h"
@@ -36,10 +38,28 @@ static const unsigned long ALARM_BEEP_GAP_MS = 100;   // between beeps
 // to the old pattern's 40% that VOICE_SCORE_TARGET needs no retuning.
 static const unsigned long ALARM_QUIET_FROM_MS = ALARM_BURST_MS;
 
+// How long the alarm holds off at the start of the cancel window so the
+// spoken prompt can be heard.
+//
+// The clip and the alarm used to start within milliseconds of each other,
+// and the piezo wins that contest outright: it is centimetres from the ear,
+// far louder than a 0.5 W speaker, and it beeps for 900 ms of every 1600.
+// "Crash detected - press the button to cancel" was being played underneath
+// it, which looks exactly like the clip failing to play at all. It is the
+// one sentence a conscious rider needs, and with no buzzer-free moment it
+// had nowhere to land.
+//
+// Deliberately shorter than VOICE_CANCEL_GRACE_MS (5 s), so this changes
+// nothing about when the microphone is trusted: the mic is already ignored
+// for longer than the buzzer is now quiet, and voiceMayCountNow() needs no
+// matching change. The window is still CRASH_CANCEL_WINDOW_MS end to end -
+// 4 s of speech then 26 s of alarm, not 34 s of anything.
+static const unsigned long ALARM_SPEAK_HEADROOM_MS = 4000;
+
 // ── init ──────────────────────────────────────────────────────────────────────
 
 void crashResponseInit() {
-  pinMode(CANCEL_BUTTON_PIN, INPUT_PULLUP);
+  buttonInit(); // owns the pin and its polarity - see button.h
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
@@ -59,7 +79,16 @@ static void setVibration(bool on) {
   }
 }
 
-static void soundBuzzerPattern() {
+static void soundBuzzerPattern(unsigned long windowStart) {
+  // Silence while the prompt is still being spoken - see
+  // ALARM_SPEAK_HEADROOM_MS. Written as an early return rather than folded
+  // into beepOn so the motor is held off too.
+  if (millis() - windowStart < ALARM_SPEAK_HEADROOM_MS) {
+    digitalWrite(BUZZER_PIN, LOW);
+    setVibration(false);
+    return;
+  }
+
   const unsigned long inCycle = millis() % ALARM_CYCLE_MS;
   const bool bursting = inCycle < ALARM_BURST_MS;
 
@@ -248,12 +277,20 @@ void handleCrash(float totalAccel, float totalGyro) {
   unsigned long windowStart = millis();
 
   while (millis() - windowStart < CRASH_CANCEL_WINDOW_MS) {
-    soundBuzzerPattern();
+    soundBuzzerPattern(windowStart);
 
-    if (digitalRead(CANCEL_BUTTON_PIN) == LOW) {
+    // Read through buttonIsDown() so a simulated press is indistinguishable
+    // from a thumb here - this is the line the bench console exists to reach.
+    if (buttonIsDown()) {
       cancelled = true;
       break;
     }
+
+    // Reads the serial monitor while the alarm is sounding, so BTN can be
+    // typed and timed against it by hand. Nothing else in the firmware runs
+    // during these 30 seconds, which is why the console has to be polled
+    // from inside the loop rather than from loop().
+    devConsolePollDuringAlert();
 
     // Gate first: when the gate says no, the mic is not sampled at all, so the
     // score holds where it was instead of absorbing noise or decaying away
@@ -286,6 +323,12 @@ void handleCrash(float totalAccel, float totalGyro) {
   telemetryEvent("NO RESPONSE from the rider - treating this as a real crash.");
   audioPlay(TRACK_REPORTING);
 
+  // Asked ONCE, here, and kept: this is the point where the response stops
+  // being local to the helmet and starts reaching other people. Re-asking
+  // per channel would let a simulated press expire halfway through and send
+  // some of the messages but not others. Always false in deployment.
+  const bool dryRun = devSimOutboundSuppressed();
+
   // SMS to the rider's emergency contact — always fires via SIM800L (cellular
   // registration only, no internet needed) as a belt-and-suspenders channel
   // regardless of whether the backend is reachable, since it goes to a
@@ -298,14 +341,34 @@ void handleCrash(float totalAccel, float totalGyro) {
   // fail anyway. Running the SMS afterwards put the most reliable channel on
   // the crash path last and latest, gated behind the least reliable one.
   telemetryDetail("1. Texting the emergency contact...");
-  sendCrashSms(totalAccel);
+  if (dryRun) {
+    devSimSkipped("SMS to the rider's emergency contact");
+  } else {
+    sendCrashSms(totalAccel);
+  }
 
   // HTTP POST to backend (creates incident, triggers Pusher + Twilio).
   // Returns true if the backend acknowledged the report (HTTP 201).
   // Returns false if offline — queued in NVS flash and retried later.
   telemetryDetail("2. Reporting to the command centre...");
-  bool backendReached = reportCrash(totalAccel, totalGyro);
+  bool backendReached;
+  if (dryRun) {
+    devSimSkipped("crash report to the backend (no incident, no dashboard, no Twilio)");
+    // Stand in with whether a connection exists at all. Claiming the report
+    // succeeded would hide the GSM fallback branch below on a unit that has
+    // no data connection - which is the branch most worth watching.
+    backendReached = (activeClient != nullptr);
+    Serial.printf("[SIM] Assuming the backend %s, from the current connection.\n",
+                  backendReached ? "would have answered" : "would NOT have answered");
+  } else {
+    backendReached = reportCrash(totalAccel, totalGyro);
+  }
 
+  // "Reporting to the command centre" is still playing whenever the two
+  // channels above returned quickly - a dry run, or a bench with no SIM800L
+  // and a backend one hop away. Both messages have already gone out by this
+  // line, so nothing anyone is waiting on is delayed by letting it finish.
+  audioWaitForClip(AUDIO_CLIP_MAX_WAIT_MS);
   audioPlay(TRACK_REPORT_SENT);
 
   // TOC voice call — two paths, one outcome:
@@ -324,13 +387,27 @@ void handleCrash(float totalAccel, float totalGyro) {
     // most of a minute, so the dispatcher is reading who and where while the
     // phone is still ringing - rather than hearing a recording about an
     // accident they cannot place.
-    sendTocFallbackSms("may have been in a motorcycle accident", totalAccel, true);
+    if (dryRun) {
+      devSimSkipped("fallback SMS and voice call to the hotline");
+      // The clip itself is still played, locally. It is the one part of this
+      // branch that costs nobody anything and is worth hearing - it is also
+      // the only way to check 0008.mp3 without ringing a real number.
+      Serial.println("[SIM] Playing the hotline clip locally so you can hear it.");
+      // Only the dry-run branch needs this. The live branch below spends
+      // a fallback SMS and CALL_CONNECT_WAIT_MS getting the call answered,
+      // which is far longer than any clip; here nothing happens at all, so
+      // "report sent" would be cut off mid-word by the hotline clip.
+      audioWaitForClip(AUDIO_CLIP_MAX_WAIT_MS);
+      audioPlay(TRACK_CALL_TOC);
+    } else {
+      sendTocFallbackSms("may have been in a motorcycle accident", totalAccel, true);
 
-    if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
-      delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
-      audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
-      delay(CALL_HOLD_MS);          // hold line while message plays
-      callEnd();
+      if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
+        delay(CALL_CONNECT_WAIT_MS);  // allow ring + answer before message starts
+        audioPlay(TRACK_CALL_TOC);    // TOC hears this through the call
+        delay(CALL_HOLD_MS);          // hold line while message plays
+        callEnd();
+      }
     }
   } else {
     telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
@@ -347,17 +424,32 @@ static unsigned long gSosPressStart = 0;
 static bool          gSosButtonHeld = false;
 
 static void triggerManualSos() {
+  // Asked at the top here rather than lower down, because there is no
+  // cancellation window on this path: the response begins immediately, and
+  // the simulated hold that triggered it is released moments later.
+  const bool dryRun = devSimOutboundSuppressed();
+
   telemetryEvent("MANUAL SOS - the rider held the button down.");
   telemetryDetail("No cancellation window: this was deliberate.");
   audioPlay(TRACK_MANUAL_SOS);
 
   // SMS first, for the same reason as handleCrash() — see the note there.
   telemetryDetail("1. Texting the emergency contact...");
-  sendManualSosSms();
+  if (dryRun) {
+    devSimSkipped("SOS text to the rider's emergency contact");
+  } else {
+    sendManualSosSms();
+  }
 
   // Treat as a "high"-severity crash so the backend creates a proper incident record.
   telemetryDetail("2. Reporting to the command centre...");
-  bool backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
+  bool backendReached;
+  if (dryRun) {
+    devSimSkipped("SOS incident report to the backend");
+    backendReached = (activeClient != nullptr);
+  } else {
+    backendReached = reportCrash(ACCEL_THRESHOLD * 1.5f, GYRO_THRESHOLD);
+  }
 
   // Same two-path TOC call logic as handleCrash — Twilio if backend is up,
   // SIM800L pre-recorded fallback if backend is unreachable.
@@ -366,13 +458,24 @@ static void triggerManualSos() {
 
     // Same as handleCrash(): the recording cannot say this was deliberate,
     // or who pressed it, or where they are.
-    sendTocFallbackSms("has triggered a manual SOS", 0.0f, false);
-
-    if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
-      delay(CALL_CONNECT_WAIT_MS);
+    if (dryRun) {
+      devSimSkipped("fallback SMS and voice call to the hotline");
+      Serial.println("[SIM] Playing the hotline clip locally so you can hear it.");
+      // Only the dry-run branch needs this. The live branch below spends
+      // a fallback SMS and CALL_CONNECT_WAIT_MS getting the call answered,
+      // which is far longer than any clip; here nothing happens at all, so
+      // "report sent" would be cut off mid-word by the hotline clip.
+      audioWaitForClip(AUDIO_CLIP_MAX_WAIT_MS);
       audioPlay(TRACK_CALL_TOC);
-      delay(CALL_HOLD_MS);
-      callEnd();
+    } else {
+      sendTocFallbackSms("has triggered a manual SOS", 0.0f, false);
+
+      if (callStart(EMERGENCY_HOTLINE_NUMBER)) {
+        delay(CALL_CONNECT_WAIT_MS);
+        audioPlay(TRACK_CALL_TOC);
+        delay(CALL_HOLD_MS);
+        callEnd();
+      }
     }
   } else {
     telemetryDetail("   Command centre has it. The dashboard and its callout take over.");
@@ -382,7 +485,7 @@ static void triggerManualSos() {
 }
 
 void checkManualSos() {
-  bool pressed = (digitalRead(CANCEL_BUTTON_PIN) == LOW);
+  bool pressed = buttonIsDown(); // physical or simulated - see button.h
 
   if (pressed && !gSosButtonHeld) {
     // Fresh press — start the hold timer.
