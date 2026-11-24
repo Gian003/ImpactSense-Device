@@ -1,3 +1,4 @@
+#include "audio.h"      // audioSetVolume(), for the rider-set speaker volume
 #include "backend.h"
 #include "config.h"
 #include "connectivity.h"
@@ -8,6 +9,10 @@
 #include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
 #include <Preferences.h>
+// For WiFi.macAddress() in attemptDeviceEnrolment(). The MAC is burned in at
+// the factory and readable whether or not WiFi is associated, so this works
+// even on a unit that came up over GSM.
+#include <WiFi.h>
 
 // Persists a crash report that failed to send so it can be retried later,
 // including across a reboot/brownout (SIM800 TX bursts can brown out the
@@ -41,6 +46,29 @@ static bool loadPendingCrashReport(String& bodyOut) {
   return pending && bodyOut.length() > 0;
 }
 
+// Adds the two headers that prove this report came from this device, when a
+// signing secret has been provisioned. Without one the request goes out
+// unsigned and the server treats the device as not yet provisioned — which is
+// what keeps a fleet already in the field working. See device_identity.h.
+//
+// `signedBytes` is what the signature covers: the JSON body on a POST, or the
+// query string on a GET, exactly as sent.
+static void addSignatureHeaders(HttpClient& http, const String& signedBytes) {
+  if (!hasSigningSecret()) {
+    return;
+  }
+
+  unsigned long counter = nextRequestCounter();
+  String signature = signRequest(counter, signedBytes);
+
+  if (signature.length() == 0) {
+    return; // signing failed; it already said so on serial
+  }
+
+  http.sendHeader("X-Device-Counter", String(counter));
+  http.sendHeader("X-Device-Signature", signature);
+}
+
 static bool httpPostJson(const char* path, const String& jsonBody, int& statusOut, String& bodyOut) {
   if (activeClient == nullptr) {
     return false;
@@ -49,7 +77,19 @@ static bool httpPostJson(const char* path, const String& jsonBody, int& statusOu
   HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
-  int err = http.post(path, "application/json", jsonBody);
+  // Assembled header by header rather than through post(path, type, body),
+  // which cannot carry extra headers.
+  http.beginRequest();
+  int err = http.post(path);
+  if (err == 0) {
+    http.sendHeader("Content-Type", "application/json");
+    http.sendHeader("Content-Length", jsonBody.length());
+    addSignatureHeaders(http, jsonBody);
+    http.beginBody();
+    http.print(jsonBody);
+    http.endRequest();
+  }
+
   if (err != 0) {
     Serial.printf("HTTP connection error: %d\n", err);
     return false;
@@ -68,7 +108,19 @@ static bool httpGetJson(const char* path, int& statusOut, String& bodyOut) {
   HttpClient http(*activeClient, getApiHost(), API_PORT);
   http.setTimeout(10000);
 
+  // The server signs the query string, so hand the same bytes to the signer:
+  // everything after the '?', or nothing if the path carries no query.
+  String pathStr(path);
+  int q = pathStr.indexOf('?');
+  String query = (q >= 0) ? pathStr.substring(q + 1) : String("");
+
+  http.beginRequest();
   int err = http.get(path);
+  if (err == 0) {
+    addSignatureHeaders(http, query);
+    http.endRequest();
+  }
+
   if (err != 0) {
     Serial.printf("HTTP connection error: %d\n", err);
     return false;
@@ -96,14 +148,15 @@ bool reportCrash(float totalAccel, float totalGyro) {
   doc["type"]        = "collision";
   doc["severity"]    = severityFromImpact(totalAccel);
 
-  // DEPLOYMENT - STEP 2 (see deployment.h). Without this, a crash during GPS
-  // cold start reports the config.h stub coordinates - central Urdaneta -
-  // indistinguishably from a real fix, sending responders somewhere the rider
-  // has never been. reportDeviceStatus() already guards its speed telemetry
-  // this way; the crash path cannot, until the backend has a column to put
-  // the answer in, because dropping the coordinates entirely is worse.
+  // Whether the coordinates above are a real satellite fix. Without it, a
+  // crash during GPS cold start reports the config.h stub coordinates -
+  // central Urdaneta - indistinguishably from a real fix. The coordinates are
+  // still sent either way: a report with a doubtful location beats no report.
   //
-  // doc["location_verified"] = hasGpsFix();
+  // The backend uses this to refuse the nearest-patrol alert on a guessed
+  // location, which would otherwise send the unit nearest to a place the
+  // rider has never been. A backend that predates the field ignores it.
+  doc["location_verified"] = hasGpsFix();
 
   String body;
   serializeJson(doc, body);
@@ -161,6 +214,48 @@ void retryPendingCrashReport() {
   clearPendingCrashReport();
 }
 
+// Reads speaker_volume out of a device status response and applies it.
+//
+// Silent and harmless when the field is absent, malformed, or unchanged: an
+// older backend, a truncated body or a repeated value must never cost the
+// heartbeat its success, because the heartbeat is also how the dashboard
+// knows this unit is alive.
+static void applyRemoteVolume(const String &response) {
+  JsonDocument doc;
+  if (deserializeJson(doc, response)) return;          // not JSON - ignore
+
+  JsonVariant value = doc["data"]["speaker_volume"];
+  if (value.isNull() || !value.is<int>()) return;      // field absent - ignore
+
+  int wanted = value.as<int>();
+  if (wanted < 0 || wanted > 30) return;               // out of range - ignore
+
+  // Only speak up when it actually changes. This runs every 60 s, and a log
+  // line per heartbeat would bury everything else in the monitor.
+  static int lastApplied = -1;
+  if (wanted == lastApplied) return;
+
+  bool first = (lastApplied < 0);
+  lastApplied = wanted;
+  audioSetVolume(wanted);
+  Serial.printf("Speaker volume set to %d by the rider's app.\n", wanted);
+
+  // Say it back, at the new level. The rider moved a slider in an app and
+  // then put their phone away; without this the only confirmation is the
+  // next crash alarm, which is a poor time to discover the setting was too
+  // quiet. Hearing the confirmation AT the chosen volume is the test.
+  //
+  // Skipped at 0 - there is nothing to hear, and a silent confirmation of
+  // silence would read as a failure. Skipped on the first heartbeat after a
+  // boot too: that is the device learning the stored value, not the rider
+  // changing it, and the helmet has just finished announcing itself.
+  if (wanted == 0) {
+    Serial.println("Volume is 0 - no confirmation clip, because nothing would be heard.");
+  } else if (!first) {
+    audioAssuranceCue(TRACK_VOLUME_SET);
+  }
+}
+
 bool reportDeviceStatus() {
   ensureConnectivity();
   if (activeClient == nullptr) {
@@ -173,21 +268,30 @@ bool reportDeviceStatus() {
   doc["battery_level"] = readBatteryPercent();
   doc["is_active"]     = true;
 
-  // The backend writes a speed_reports row whenever all three of these are
-  // present (RiderDeviceController::updateStatus), which is what feeds "Speed
-  // Reports per Area" - so the heartbeat doubles as the speed telemetry and no
-  // second periodic call is needed.
+  // Stamped into the binary from `git describe` at build time, so this is the
+  // commit the unit is actually running - not whatever someone typed into SET
+  // months ago. See inject_version.py.
   //
-  // Only attached on a real fix. getLatitude()/getLongitude() fall back to the
-  // stub coordinates in config.h, and sending those would file a reading the
-  // device never actually took at a place it has never been, permanently, in a
-  // table meant for aggregation.
-  int speedKph = getSpeedKph();
-  if (hasGpsFix() && speedKph >= 0) {
-    doc["latitude"]  = getLatitude();
-    doc["longitude"] = getLongitude();
-    doc["speed_kph"] = speedKph;
-  }
+  // Sent on every heartbeat, not once per boot, even though it cannot change
+  // within one. Thirty-odd bytes buys a dashboard that corrects itself: sent
+  // once and that one request lost, the TOC would show the pre-reflash
+  // version indefinitely with nothing to reveal it. That is the opposite of
+  // the speed fields removed below, which were bytes that bought nothing at
+  // all because no one read them.
+  doc["firmware_version"] = getFirmwareVersion();
+
+  // No position or speed here, deliberately.
+  //
+  // This used to attach latitude, longitude and speed_kph on any heartbeat
+  // with a satellite fix, and the comment claimed the backend stored them in
+  // speed_reports. It never did: RiderDeviceController::updateStatus validated
+  // none of the three and dropped them, and nothing anywhere in the backend
+  // read or wrote that table. Speed reporting was dropped from the system
+  // because the PNP does not operate it, so the fields were paying for
+  // themselves in GSM bytes on every heartbeat and buying nothing.
+  //
+  // The crash report still carries a position - see reportCrash(). That is the
+  // one place a location actually matters.
 
   String body;
   serializeJson(doc, body);
@@ -200,6 +304,21 @@ bool reportDeviceStatus() {
   }
 
   Serial.printf("Device status HTTP %d: %s\n", status, response.c_str());
+
+  // The rider's chosen speaker volume rides back on this same response.
+  //
+  // No extra request, no polling loop, no push channel: the heartbeat is
+  // already made every 60 s while riding, and the backend already returns
+  // the whole device record. Carrying the setting on a request that happens
+  // anyway costs nothing, and means a helmet that is out of signal simply
+  // keeps the last volume it knew rather than falling silent or resetting.
+  //
+  // Up to 60 s to take effect while riding, up to 5 minutes when idle - the
+  // app says so rather than pretending the slider moved the speaker.
+  if (status == 200) {
+    applyRemoteVolume(response);
+  }
+
   return status == 200;
 }
 
@@ -245,4 +364,114 @@ bool fetchEmergencyContact(String &riderName, String &contactName, String &conta
   contactName  = String(name);
   contactPhone = String(phone);
   return true;
+}
+
+// ── automatic enrolment ──────────────────────────────────────────────────────
+//
+// Asked for by the pre-final defence panel: device_code and model should be
+// assigned when the device connects, not typed into a serial monitor once per
+// unit. See device_identity.h for the identity half.
+//
+// Identification is by MAC address, because it is the only thing this board
+// has before it has an identity — device_code is precisely what is being
+// handed out, so it cannot also be what identifies the board asking for it.
+
+// How long to keep asking after the server says "seen you, not registered
+// yet". Long enough for an operator to find the board on the page and submit
+// the form; short enough that a unit powered on with nobody at the console
+// finishes booting rather than hanging.
+static const unsigned long ENROLMENT_WAIT_MS   = 90000;
+static const unsigned long ENROLMENT_RETRY_MS  = 5000;
+
+bool attemptDeviceEnrolment() {
+  if (!deviceNeedsEnrolment()) {
+    return false;
+  }
+
+  if (activeClient == nullptr) {
+    Serial.println("[Enrol] No data connection - cannot enrol. Use SET / SECRET over serial.");
+    return false;
+  }
+
+  String mac = WiFi.macAddress();
+  if (mac.length() == 0 || mac == "00:00:00:00:00:00") {
+    Serial.println("[Enrol] No MAC address available - cannot enrol.");
+    return false;
+  }
+
+  JsonDocument doc;
+  doc["mac_address"]      = mac;
+  doc["firmware_version"] = getFirmwareVersion();
+
+  String body;
+  serializeJson(doc, body);
+
+  Serial.println();
+  Serial.println("=========================================================");
+  Serial.printf (" ENROLLING - this unit has no identity yet.\n");
+  Serial.printf ("   MAC      : %s\n", mac.c_str());
+  Serial.printf ("   firmware : %s\n", getFirmwareVersion().c_str());
+  Serial.println("   Register it on the TOC device page. Open enrolment there");
+  Serial.println("   first, or this will be refused.");
+  Serial.println("=========================================================");
+
+  unsigned long startedAt = millis();
+
+  while (millis() - startedAt < ENROLMENT_WAIT_MS) {
+    int status = 0;
+    String response;
+
+    if (!httpPostJson("/api/device/announce", body, status, response)) {
+      Serial.println("[Enrol] Could not reach the backend. Retrying...");
+      delay(ENROLMENT_RETRY_MS);
+      continue;
+    }
+
+    // Closed window. No amount of retrying changes this, and hammering a
+    // credential endpoint after being refused is exactly the behaviour the
+    // window exists to prevent.
+    if (status == 403) {
+      Serial.println("[Enrol] Enrolment is CLOSED on the server.");
+      Serial.println("[Enrol] Open it on the TOC device page, then reset this board.");
+      return false;
+    }
+
+    if (status == 202) {
+      Serial.println("[Enrol] Announced. Waiting for an operator to register it...");
+      delay(ENROLMENT_RETRY_MS);
+      continue;
+    }
+
+    if (status != 200) {
+      Serial.printf("[Enrol] Unexpected response (HTTP %d). Giving up.\n", status);
+      return false;
+    }
+
+    JsonDocument reply;
+    if (deserializeJson(reply, response)) {
+      Serial.println("[Enrol] Server reply was not valid JSON. Giving up.");
+      return false;
+    }
+
+    const char* code   = reply["data"]["device_code"] | "";
+    const char* model  = reply["data"]["model"]       | "";
+    const char* secret = reply["data"]["secret"]      | "";
+
+    if (!applyEnrolledIdentity(String(code), String(model), String(secret))) {
+      return false;
+    }
+
+    Serial.println();
+    Serial.println("=========================================================");
+    Serial.printf (" ENROLLED as %s\n", getDeviceCode().c_str());
+    Serial.printf ("   model  : %s\n", getDeviceModel().c_str());
+    Serial.println("   Signing secret stored. Reports from this unit are signed.");
+    Serial.println("=========================================================");
+    Serial.println();
+    return true;
+  }
+
+  Serial.println("[Enrol] Nobody registered this board in time. Booting unprovisioned.");
+  Serial.println("[Enrol] Reset to try again, or use SET / SECRET over serial.");
+  return false;
 }

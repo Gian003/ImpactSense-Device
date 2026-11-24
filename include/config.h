@@ -70,6 +70,19 @@ const int GSM_TX_PIN = 27;
 // whichever one works so it can be set here permanently.
 const uint32_t GSM_BAUD = 9600;
 const int CANCEL_BUTTON_PIN = 4;
+
+// ===== Bench console (development only) =====
+//
+// Lets the button be pressed, and a crash or SOS be triggered, by typing
+// into the serial monitor. See dev_console.h for why that is worth having
+// and how the simulated press reaches the same code a real one does.
+//
+// Tied to DEPLOYMENT_MODE rather than set by hand, and deliberately not a
+// switch of its own. A console that can raise a real SOS has no business on
+// a helmet in the field, and the one way that happens is somebody flipping
+// a flag for an afternoon and forgetting it. Deriving it means going to
+// deployment turns it off whether anyone remembered or not.
+const bool DEV_CONSOLE_ENABLED = !DEPLOYMENT_MODE;
 const int BUZZER_PIN = 5;
 const int BATTERY_PIN = 34;
 
@@ -99,7 +112,7 @@ const char *const WIFI_PASSWORD = "tF2teH9s"; // ← UPDATE if testing at home
 // The APN only matters for GPRS data. SMS and voice calls - which the crash
 // path depends on - need cellular registration alone.
 enum SimCarrier { CARRIER_SMART_TNT, CARRIER_GLOBE_TM };
-const SimCarrier SIM_CARRIER = CARRIER_SMART_TNT;
+const SimCarrier SIM_CARRIER = CARRIER_GLOBE_TM;
 
 const char *const GPRS_APN  = (SIM_CARRIER == CARRIER_GLOBE_TM) ? "internet.globe.com.ph"
                                                                 : "internet";
@@ -116,7 +129,7 @@ const char *const GPRS_PASS = "";
 // When true, modemInit() attaches to GPRS once after registering, reports
 // whether it got an IP address, and detaches. Adds up to ~30 s to boot and
 // uses a few KB. Turn it on while choosing a carrier, then back off.
-const bool GPRS_SELF_TEST = false;
+const bool GPRS_SELF_TEST = true;
 
 // Whether to route HTTP traffic over GPRS when WiFi is unavailable.
 //
@@ -133,10 +146,12 @@ const bool GPRS_SELF_TEST = false;
 // cert store. Each of those alone is enough to fail the handshake.
 //
 // None of this weakens the crash path. GSM is still the fallback; it just
-// carries SMS and the voice call to the TOC hotline (both of which need only
-// cellular registration, never a data session, and work on a far weaker
-// signal than GPRS would) instead of an HTTP request. See handleCrash() in
-// crash_response.cpp.
+// carries SMS and the voice call instead of an HTTP request - both of which
+// need only cellular registration, never a data session, and work on a far
+// weaker signal than GPRS would. Offline, a crash sends three things: a text
+// to the rider's emergency contact, a text to the TOC carrying the details
+// the recorded call cannot speak (TOC_SMS_NUMBER), and the call itself. See
+// handleCrash() in crash_response.cpp.
 //
 // Follows DEPLOYMENT_MODE, because it is only safe to enable together with
 // the port-80 switch below - and only after "Always Use HTTPS" is off in
@@ -149,11 +164,35 @@ const bool GSM_DATA_ENABLED = DEPLOYMENT_MODE;
 // actual AT communication so boot and crash-handling aren't stuck waiting on
 // timeouts against a dead modem while testing everything else. Flip back to
 // true once the module is properly powered and registering.
-const bool SIM800L_ENABLED = true;
+// 2026-11-17: OFF for WiFi-based demos. The modem answers and reads the SIM,
+// but will not register (signal 99 on a Globe SIM, so 2G exists - suspect the
+// u.FL connector or local coverage). Leaving it on costs ~30 s of boot waiting
+// on registration timeouts and prints a screen of errors. Nothing in the crash
+// path depends on it while WiFi is up: the incident goes over WiFi and the
+// backend sends the SMS and the TOC call. Turn back ON for offline testing.
+const bool SIM800L_ENABLED = false;
 
 // ===== Emergency voice call =====
 // TOC / dispatch number the device calls when a crash is confirmed.
-const char *const EMERGENCY_HOTLINE_NUMBER = "09652145185";
+const char *const EMERGENCY_HOTLINE_NUMBER = "09456725632";
+
+// Where the device texts the crash details when it could not reach the
+// backend. Defaults to the hotline above, which is a mobile number.
+//
+// The backup voice call can only play a fixed recording - it cannot say who
+// crashed, how badly, or where, because those are not in the audio file. So
+// on its own it tells the TOC that something happened to somebody, somewhere.
+// This text carries what the call cannot, and says plainly that the crash is
+// NOT on the dashboard, so nobody goes looking for a record that was never
+// filed.
+//
+// Sent only when the backend was unreachable. When the report got through,
+// the server has already called the hotline with the full details and the
+// incident is on the board - a second text would be noise.
+//
+// Set to "" to switch it off, or to a duty desk mobile if the hotline number
+// is a landline and cannot receive SMS.
+const char *const TOC_SMS_NUMBER = EMERGENCY_HOTLINE_NUMBER;
 
 // How long after dialling to wait before playing the TOC audio track.
 // Allows the ring + answer cycle to complete before the message starts.
@@ -181,9 +220,21 @@ const uint16_t API_PORT = DEPLOYMENT_MODE ? 80 : 443;
 // instead and one firmware image serves every device — see
 // include/device_identity.h for how to set it on a unit.
 //
-// This is only how long the boot-time provisioning window listens on USB
-// serial before startup continues on its own.
-const unsigned long PROVISION_WINDOW_MS = 8000;
+// How long the boot-time provisioning window listens on USB serial before
+// startup continues on its own.
+//
+// Two figures, because they answer different questions. The first is how long
+// to wait for someone who may not be there - paid on every single boot, so it
+// stays short. The second is how long to keep waiting once somebody has
+// actually typed something, where the cost is only that a person at the desk
+// has stopped typing, and the pain of it expiring mid-sequence is having to
+// reset the board and start over.
+//
+// Raise PROVISION_WINDOW_MS if you want longer to click into the monitor after
+// a reset; raise PROVISION_IDLE_MS if a minute and a half between keystrokes
+// is not enough.
+const unsigned long PROVISION_WINDOW_MS = 20000;
+const unsigned long PROVISION_IDLE_MS   = 90000;
 
 // In deployment mode the full window is skipped unless someone is actually
 // typing: the device waits only this long to notice a keystroke. Eight seconds
@@ -200,6 +251,49 @@ const double STUB_LONGITUDE = 120.5650;
 // ===== Battery voltage divider calibration =====
 // Assumes a 100k/100k divider (halves the voltage) and a single-cell LiPo (3.3V empty, 4.2V full).
 // Re-measure with a multimeter and adjust if your divider resistors differ.
+//
+// IS THE DIVIDER ACTUALLY FITTED? Two 100k resistors in series from the cell's
+// + terminal to GND, with GPIO 34 on the midpoint. Set this false on a unit
+// built without them.
+//
+// It matters because GPIO 34 is input-only and has no internal pull. With
+// nothing on it the pin floats, analogRead() returns whatever charge happens
+// to be sitting on it, and the heartbeat publishes a battery level that
+// wanders for no reason - which looks far more like a failing device than an
+// unfitted sensor does.
+//
+// NEVER wire the cell straight to GPIO 34. A charged cell sits at 4.2 V and
+// the ADC pin is rated to 3.3 V; the divider is what makes the reading safe,
+// not just accurate.
+// Three flags describe this one physical fact, and they have to move
+// together or the dashboards start lying:
+//
+//   here                                 BATTERY_SENSE_FITTED
+//   ImpactSenseAdmin/config/ui.php       'battery_sense_fitted'
+//   ImpactSense-Mobile/lib/core/         kBatterySenseFitted
+//       device_features.dart
+//
+// The two UI flags exist because this one cannot be expressed over the
+// API: battery_level is validated required|integer|between:0,100, so an
+// unfitted device still has to send a number and sends
+// BATTERY_UNFITTED_REPORT. With the UI flags false nothing renders that
+// number anywhere, which is the only honest thing to do with it.
+const bool BATTERY_SENSE_FITTED = false;
+
+// What to report while the divider is absent.
+//
+// It cannot be "unknown". RiderDeviceController::updateStatus validates
+// battery_level as required|integer|between:0,100, so a sentinel like -1
+// fails the whole heartbeat with a 422 and takes the device's liveness
+// reporting down with it. Omitting the field fails the same way.
+//
+// So this is a placeholder, and deliberately a high one: 0 renders as a flat
+// battery in the dashboard, which is a more misleading thing to show than a
+// full one. The honest fix is a nullable battery_level column and a real
+// "unknown" state end to end - worth doing, but it is a schema change plus a
+// UI change, and it is not what an unfitted resistor pair is owed.
+const int BATTERY_UNFITTED_REPORT = 100;
+
 const float BATTERY_DIVIDER_RATIO = 2.0;
 const float BATTERY_MIN_V = 3.3;
 const float BATTERY_MAX_V = 4.2;
@@ -222,6 +316,179 @@ const int TRACK_VOICE_CANCEL = 7;   // plays locally on helmet speaker
 // Hardware: DFPlayer DAC_R (pin 4) → 100 kΩ → SIM800L MIC+, SIM800L MIC− → GND.
 // Also plays locally on the helmet speaker at the same time.
 const int TRACK_CALL_TOC = 8;
+
+// --- Assurance cues: optional, and only ever good news ---------------------
+//
+// 9 and 10 exist so the rider is told the device is WORKING, not only that it
+// thinks they have crashed. Everything the helmet said before this point was
+// bad news, which means a silent helmet and a healthy helmet sounded exactly
+// the same - and a rider who cannot tell those apart has no reason to trust
+// the thing on their head.
+//
+// Until the two clips are recorded the device simply says nothing extra: a
+// track that is not on the card makes the module answer FileMismatch and play
+// silence. Nothing else changes, and nothing breaks.
+const int TRACK_ONLINE = 9;      // "ImpactSense is online..."
+const int TRACK_VOLUME_SET = 10; // "Volume set." - heard AT the new volume
+
+// The range PLAY lists and range-checks, as names rather than literals, so
+// adding a clip later means editing these two lines and nothing else.
+const int TRACK_FIRST = TRACK_STARTUP;
+const int TRACK_LAST  = TRACK_VOLUME_SET;
+
+// ===== Audio behaviour =====
+
+// Master switch for the assurance cues (tracks 9 and 10) ONLY.
+//
+// The emergency tracks are not assurance and are never gated by this: the
+// crash alarm, the SOS clip and the hotline clip play whatever it is set to.
+// Nor is the startup announcement, which predates this flag - turning cues
+// off should not quietly change what the helmet did at boot yesterday.
+const bool AUDIO_ASSURANCE_ENABLED = true;
+
+// Do not re-announce "online" more often than this. A hotspot at the edge of
+// range associates and drops repeatedly, and a helmet that says the same
+// sentence every forty seconds is a helmet the rider switches off.
+const unsigned long AUDIO_ONLINE_CUE_COOLDOWN_MS = 300000UL; // 5 minutes
+
+// How long an assurance cue stays quiet after an emergency clip. The rider is
+// listening to something that matters; "ImpactSense is online" must never
+// talk over "press the button to cancel".
+const unsigned long AUDIO_ASSURANCE_QUIET_MS = 60000UL;
+
+// Minimum gap between ANY clip and an assurance cue. Without this the
+// online cue talks over the startup announcement on a board that joins its
+// hotspot quickly - the two are only a couple of seconds apart in setup(),
+// and the second command simply cuts the first clip off mid-word.
+const unsigned long AUDIO_CUE_MIN_GAP_MS = 6000UL;
+
+// Send the DFPlayer's serial frames with interrupts off on this core.
+//
+// THIS IS THE FIX FOR TRACKS GOING SILENT ONCE WIFI IS UP, and it is worth
+// knowing why, because the symptom looks like bad wiring or a bad card.
+//
+// The DFPlayer is on SoftwareSerial (all three hardware UARTs are taken), so
+// every command is ten bytes timed in software: 104 us per bit, 10.4 ms per
+// frame, each edge busy-waited against the cycle counter. EspSoftwareSerial
+// leaves interrupts ENABLED during that by default, which is fine on an idle
+// board.
+//
+// Once WiFi is up it is not fine, and the reason is specific to this
+// framework. Checked against the Arduino-ESP32 sdkconfig this project builds
+// with: CONFIG_ARDUINO_RUNNING_CORE is 1, and CONFIG_ARDUINO_EVENT_RUNNING_CORE
+// is ALSO 1 - so the network event task shares this core with the loop and
+// outranks it. WiFi.begin() is likewise called from setup() on core 1, which
+// is where the driver's interrupt handlers get allocated. (The lwIP task is
+// the one thing that is NOT to blame: CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0
+// pins it to the other core.)
+//
+// So a frame being clocked out gets preempted part-written, the bits come out
+// the wrong length, the module sees a bad checksum, and it discards the
+// command - silently, because a frame it never accepted is a frame it cannot
+// complain about. Silence is the only symptom.
+//
+// That is why the startup clip was the one that went missing: it was the only
+// track played after ensureConnectivity(), so it was the only one sent through
+// a radio-busy board. PLAY worked on the bench because the provisioning
+// window runs BEFORE the radio comes up.
+//
+// With this true, each frame goes out inside taskENTER_CRITICAL - on the ESP32
+// that is this core only, and the library re-enables between bytes, so the
+// longest blocked stretch is about 1 ms. WiFi lives on the other core, the GPS
+// UART has a 128-byte FIFO (about 13 ms of headroom at 9600) and the MPU6050
+// is polled, so nothing here is harmed by 1 ms.
+const bool AUDIO_PRECISE_TX = true;
+
+// After asking for a track, ask the module whether it actually started, and
+// re-send once if it answers that it did not.
+//
+// Deliberately does NOT retry when the query times out. A timeout says the
+// module did not answer, which is not the same as "it is not playing" - on a
+// clone that never answers queries, retrying on silence would restart every
+// clip from the beginning, every time. Only a module that speaks up and says
+// "stopped" earns a second attempt.
+const bool AUDIO_VERIFY_PLAY = true;
+
+// How long to settle before ASKING whether it started.
+//
+// This used to be 150 ms, chosen as "long enough for the module to start".
+// It was double-counting: readState() goes through sendStack(), which blocks
+// on the previous command's outstanding ACK before it writes anything, so the
+// play command's own ACK round-trip - a 10-byte frame at 9600 baud, 104 ms on
+// the wire plus the module's few tens of ms - is already spent inside the
+// query. 60 ms here still puts the state sample roughly 280 ms after the play
+// command went out, which is ample, and saves 90 ms on every verified clip.
+const int AUDIO_PLAY_VERIFY_MS = 60;
+
+// How long the library waits for any reply before calling it a timeout.
+//
+// DFRobotDFPlayerMini.h ships 500 ms, and that number gets paid twice per
+// verified play rather than once: sendStack() waits up to 500 ms for the
+// PREVIOUS command's ACK before writing a new frame, and then the query waits
+// up to 500 ms for its own answer. A clip that started correctly 20 ms in
+// could still cost a full second of dead time - four of those in one crash
+// response, which is where "the audio feels delayed every time" came from.
+//
+// 300 ms is about double the measured worst case for a real reply, and takes
+// the worst verified play from ~1.15 s to ~0.66 s.
+const unsigned long AUDIO_QUERY_TIMEOUT_MS = 300UL;
+
+// readFileCounts() genuinely takes longer than an ACK on a card holding many
+// files, and it is only ever asked for by audioReport(), at a bench, by hand.
+// Raised for the duration of that one call so a slow card is not misreported
+// as a dead link - which is the exact mistake audioReport() warns about.
+const unsigned long AUDIO_REPORT_TIMEOUT_MS = 1500UL;
+
+// Print the elapsed time of any play that took longer than this.
+//
+// Worth the line, because the three reasons a clip goes unheard - a slow or
+// lossy serial link, a module that browned out and reset, and a clip that
+// played perfectly underneath the buzzer - are indistinguishable by ear and
+// easy to tell apart by this number.
+// Set above the cost of a HEALTHY verified play, not above zero. A verified
+// emergency clip legitimately spends about 280 ms - 60 ms settling, then an
+// ACK round-trip and a state reply at roughly 110 ms each - and a line printed
+// every time that happens is noise that hides the real thing. 400 ms is clear
+// of the healthy case and below one consumed timeout, so the line appears
+// when, and only when, something actually waited.
+const unsigned long AUDIO_SLOW_PLAY_WARN_MS = 400UL;
+
+// ===== Letting a clip finish before the next one replaces it =====
+//
+// playMp3Folder() does not queue, it interrupts. The crash sequence was
+// written on the assumption that real work separates the narration clips:
+// "reporting to the command centre" plays, then the SMS and the HTTP POST
+// take their seconds, and only then does "report sent" replace it.
+//
+// That assumption does not hold on this bench, and not only in a dry run.
+// With SIM800L_ENABLED false there is no SMS to wait for, a dry run skips
+// both channels outright, and a backend on a local tunnel can answer in
+// under a second. The gap collapses to nothing and each clip is cut off a
+// few hundred milliseconds in - which sounds exactly like clips failing to
+// play, while the module is in fact doing precisely what it was told.
+//
+// So the wait goes BEFORE the clip that would interrupt, never before the
+// outbound work. On a real crash the work has already taken longer than
+// the clip and this costs nothing; when the work was instant, it waits out
+// the remainder. Nothing that reaches another person is ever delayed by
+// it - by the time the first of these runs, the SMS and the report have
+// already gone out. The only thing held back is the rider being told so.
+
+// Hard ceiling on one wait, honoured whatever the module says. Deliberately
+// not generous: a stuck wait here would stall a crash response, and the
+// cost of cutting a clip slightly short is a clipped word.
+const unsigned long AUDIO_CLIP_MAX_WAIT_MS = 6000UL;
+
+// What a clip is assumed to run for when the module cannot be asked - the
+// no-ACK clones, which answer no queries at all. AUDIO_SCRIPT.md writes the
+// clips to a few seconds each, so this is an estimate with a real basis
+// rather than a guess.
+const unsigned long AUDIO_CLIP_NOMINAL_MS = 3000UL;
+
+// How long after a clip starts before "stopped" is believed. Asked any
+// sooner, a module that has not begun yet answers 0, and the wait would
+// return immediately having waited for nothing.
+const unsigned long AUDIO_CLIP_SETTLE_MS = 400UL;
 
 // ===== Vibration motor (haptic alerts) =====
 // NOT FITTED YET. Leave VIBRATION_ENABLED false until the motor is physically
@@ -288,6 +555,24 @@ const int VOICE_SCORE_TARGET = 200;
 // mic, and a prompt that outlasts this would be heard as the rider replying.
 const unsigned long VOICE_CANCEL_GRACE_MS = 5000;
 
+// 2026-11-17: OFF for bench and demo work.
+//
+// The gating below assumes the microphone's main enemy is the device's own
+// noise - the alarm track and the buzzer. In a room of people watching a
+// demonstration the enemy is the room, and a stray conversation inside the
+// 30 s window cancels the crash before it ever reports. That looks like a
+// failure of crash detection when it is the opposite: voice cancel working
+// exactly as designed, on the wrong voice.
+//
+// MIC_VOICE_THRESHOLD has also never been validated on a real helmet, so
+// there is no measured basis yet for trusting it in a noisy room.
+//
+// Turn back ON once the threshold has been tuned at Stage 8. micInit() still
+// runs and still reports its resting level either way, so the microphone is
+// still proven at boot. The cancel button is unaffected and remains the
+// rider's way out.
+const bool VOICE_CANCEL_ENABLED = false;
+
 // After the buzzer or motor switches off, how long before the mic is trusted
 // again - a piezo and an ERM both keep ringing briefly.
 const unsigned long SELF_NOISE_SETTLE_MS = 40;
@@ -300,11 +585,11 @@ const float VOICE_MOTION_GYRO        = 90.0; // deg/s
 
 // ===== Manual SOS =====
 // Hold the cancel button for this long outside a crash window to send SOS.
-const unsigned long MANUAL_SOS_HOLD_MS = 3000;
+const unsigned long MANUAL_SOS_HOLD_MS = 3000;   
 
-// ===== Crash detection thresholds =====
-const float ACCEL_THRESHOLD = 25.0; // m/s^2 (total acceleration, includes gravity)
-const float GYRO_THRESHOLD = 200.0; // deg/s (total rotation)
+const float ACCEL_THRESHOLD = 25.0; // m/s^2 (total acceleration, inc
+// ===== Crash detection thresholds =====ludes gravity) //25.0
+const float GYRO_THRESHOLD = 200.0; // deg/s (total rotation) // 200.0
 
 // ===== Precaution (early-warning) thresholds =====
 // Lower than the full crash thresholds above, and checked with OR instead of
@@ -388,9 +673,16 @@ const uint32_t ACTIVE_CPU_MHZ   = 240;
 // All three print the same >> event lines, so the story of a crash reads the
 // same way whichever one is selected.
 enum TelemetryMode { TELEMETRY_DEMO, TELEMETRY_DETAILED, TELEMETRY_PLOTTER };
-const TelemetryMode TELEMETRY_MODE = TELEMETRY_DEMO;
+
+// DETAILED while bringing the new board up module by module: it is the only
+// mode that prints per-axis figures, the peak between prints, and whether an
+// I2C read was substituted. DEMO hides all three behind a progress bar, which
+// is right for a panel and wrong for a bench.
+//
+// Put this back to TELEMETRY_DEMO before showing the device to anyone.
+const TelemetryMode TELEMETRY_MODE = TELEMETRY_DETAILED;
 
 // How often the block refreshes. 1.5 s suits tuning; 2-3 s reads more calmly
 // in a demo, where a panel scrolling too fast is harder to follow than one
 // that updates a little behind the action.
-const unsigned long TELEMETRY_INTERVAL_MS = 2000;
+const unsigned long TELEMETRY_INTERVAL_MS = 1500;

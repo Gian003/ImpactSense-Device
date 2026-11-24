@@ -59,13 +59,26 @@ static void printDemoBlock(const MotionReading &motion) {
 
   Serial.printf("  %-10s %s\n", "Network", networkLabel());
 
+  // Three different states, deliberately worded so they cannot be confused.
+  // "No fix" on a healthy module means wait; on a dead one it means fix the
+  // wiring — and from outside they look identical, which is why a first fix
+  // is so often spent staring at hardware that was never going to answer.
   if (hasGpsFix()) {
-    Serial.printf("  %-10s GPS fix  %.6f, %.6f\n", "Location",
-                  getLatitude(), getLongitude());
+    Serial.printf("  %-10s GPS fix  %.6f, %.6f   (%d satellites)\n", "Location",
+                  getLatitude(), getLongitude(), getSatelliteCount());
+  } else if (!gpsReceivingData()) {
+    Serial.printf("  %-10s NO DATA from the GPS module - check its wiring and power\n", "Location");
   } else {
     // Never dressed up as a position. This is the same honesty the crash
     // report itself needs - see STEP 2 in deployment.h.
-    Serial.printf("  %-10s no GPS fix yet - location not confirmed\n", "Location");
+    char sats[24];
+    int seen = getSatelliteCount();
+    if (seen < 0) {
+      snprintf(sats, sizeof(sats), "none yet");
+    } else {
+      snprintf(sats, sizeof(sats), "%d in view", seen);
+    }
+    Serial.printf("  %-10s searching, %s - location not confirmed\n", "Location", sats);
   }
 
   Serial.printf("  %-10s %d%%\n", "Battery", readBatteryPercent());
@@ -73,7 +86,13 @@ static void printDemoBlock(const MotionReading &motion) {
   printBar("Impact",   motion.totalAccel, 9.81f, ACCEL_THRESHOLD); // at rest: 1 g
   printBar("Rotation", motion.totalGyro,  0.0f,  GYRO_THRESHOLD);  // at rest: 0 deg/s
 
-  if (motion.substituted) {
+  // Two different faults wearing the same flag. A missing sensor is permanent
+  // and means this unit cannot detect a crash at all; a substituted read is a
+  // bus that flaked once. Telling a demo audience "check the wiring" when the
+  // sensor was never there sends them looking for the wrong thing.
+  if (!motionSensorPresent()) {
+    Serial.println("  Sensor     NO MOTION SENSOR - crash detection is OFF");
+  } else if (motion.substituted) {
     Serial.println("  Sensor     READ FAILED - check the SDA/SCL wiring");
   }
 
@@ -88,9 +107,23 @@ static void printDetailedBlock(const MotionReading &motion,
                   : currentNetwork == NET_GSM  ? "gsm"
                                                : "offline";
 
-  Serial.printf("\n[%7.1fs] temp %.1fC   net %s   power %s%s\n",
-                millis() / 1000.0f, motion.tempC, net, powerStateName(),
-                sawStale ? "   STALE I2C READS - check SDA/SCL wiring" : "");
+  char gpsState[28];
+  if (hasGpsFix()) {
+    snprintf(gpsState, sizeof(gpsState), "fix/%dsat", getSatelliteCount());
+  } else if (!gpsReceivingData()) {
+    snprintf(gpsState, sizeof(gpsState), "NO DATA");
+  } else {
+    snprintf(gpsState, sizeof(gpsState), "searching/%dsat", max(getSatelliteCount(), 0));
+  }
+
+  const char *sensorNote = !motionSensorPresent()
+                               ? "   NO MOTION SENSOR - crash detection is OFF"
+                           : sawStale ? "   STALE I2C READS - check SDA/SCL wiring"
+                                      : "";
+
+  Serial.printf("\n[%7.1fs] temp %.1fC   net %s   power %s   gps %s%s\n",
+                millis() / 1000.0f, motion.tempC, net, powerStateName(), gpsState,
+                sensorNote);
 
   Serial.printf("            accel  X %+7.2f  Y %+7.2f  Z %+7.2f   "
                 "|mag| %6.2f m/s2   peak %6.2f   %3.0f%% of %.0f\n",

@@ -1,5 +1,6 @@
 #include "connectivity.h"
 #include "config.h"
+#include "redact.h"
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -331,7 +332,15 @@ bool sendSms(const String &number, const String &message)
     return false;
   }
 
-  Serial.printf("Sending SMS to %s: %s\n", number.c_str(), message.c_str());
+  // The RECIPIENT is masked; the message body is not.
+  //
+  // That is a deliberate split, not an oversight. The body is what you have
+  // to be able to read while developing - the wording, the length against
+  // the 160-character limit, whether the maps link survived - and masking it
+  // would leave no way to check any of that. But it does carry the rider's
+  // name and their coordinates, so a log containing one of these lines is
+  // not a log to attach to anything public.
+  Serial.printf("Sending SMS to %s: %s\n", maskPhone(number).c_str(), message.c_str());
 
   bool sent = modem.sendSMS(number, message);
   Serial.println(sent ? "SMS sent successfully." : "SMS send failed.");
@@ -356,7 +365,7 @@ bool callStart(const String &number)
     return false;
   }
 
-  Serial.printf("Dialling %s...\n", number.c_str());
+  Serial.printf("Dialling %s...\n", maskPhone(number).c_str());
   bool dialled = modem.callNumber(number);
 
   if (!dialled)

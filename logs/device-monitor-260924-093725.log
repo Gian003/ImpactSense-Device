@@ -1,0 +1,39 @@
+PI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+[   518][E][Preferences.cpp:483] getString(): nvs_get_str len fail: device_code NOT_FOUND
+[   530][E][Preferences.cpp:483] getString(): nvs_get_str len fail: model NOT_FOUND
+[   537][E][Preferences.cpp:483] getString(): nvs_get_str len fail: firmware NOT_FOUND
+[   545][E][Preferences.cpp:483] getString(): nvs_get_str len fail: sign_secret NOT_FOUND
+WARNING: this unit has no device_code yet. Backend calls will be rejected until it is provisioned - use SET below.
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>,<firmware>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : UNPROVISIONED
+  model            : (not set)
+  firmware_version : (not set)
+  signing secret   : NOT SET (reports are unsigned)
+[Provision] Window closed - continuing startup with the identity above.
+
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+Scan done. If nothing found, check wiring and power.

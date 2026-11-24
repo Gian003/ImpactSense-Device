@@ -12,6 +12,7 @@
 #include "mic.h"
 #include "power_state.h"
 #include "telemetry.h"
+#include "dev_console.h"
 
 // DEPLOYMENT - STEP 3 (see deployment.h): uncomment with the watchdog blocks
 // in setup() and loop().
@@ -37,10 +38,50 @@ void setup() {
   crashResponseInit();
   gpsInit();
   audioInit();
+
+  // Said HERE, not at the end of setup(), and that move is the other half of
+  // the fix for the missing startup announcement.
+  //
+  // Two reasons. The first is the bug: this used to be the last line of
+  // setup(), so it was the one clip ever sent with the radio already up, and
+  // AUDIO_PRECISE_TX explains why that lost it. The second is that it is a
+  // better moment anyway - ensureConnectivity() can spend 5 s on WiFi and
+  // longer on the modem, and a rider who flips the switch deserves to hear
+  // the helmet answer immediately rather than half a minute later.
+  //
+  // It claims nothing about the network, so there is nothing to wait for:
+  // "ImpactSense is active" is true the moment the speaker works.
+  audioPlay(TRACK_STARTUP); // "ImpactSense is active. Ride safe."
+
   micInit();
   modemInit();          // brings up SIM800 for SMS, independent of WiFi/GPRS
   contactCacheInit();   // loads last-known emergency contact from flash
   ensureConnectivity(); // tries WiFi first, falls back to GSM
+
+  // Does the DFPlayer still answer now that the radio is up?
+  //
+  // This one line separates the two faults that both present as "audio
+  // worked on the bench and not in the field", and which have nothing in
+  // common: a serial link the radio is corrupting, and a 5 V rail the radio
+  // is dragging down. Guessing between them has cost whole evenings.
+  if (audioReady()) {
+    if (audioLinkAlive()) {
+      Serial.println("[Audio] Module still answering with the radio up - link is good.");
+    } else {
+      Serial.println("[Audio] See above. If it says RESET, that is the 5 V rail sagging");
+      Serial.println("[Audio] when the radio transmits. Fit the 1000 uF across the");
+      Serial.println("[Audio] DFPlayer's own VCC and GND, AT the module - that is right");
+      Serial.println("[Audio] whether it is fed from the MT3608 or from the ESP32 5V pin.");
+      Serial.println("[Audio] Resyncing so playback carries on meanwhile.");
+      audioResync();
+    }
+  }
+
+  // Must come after connectivity and before anything that talks to the backend
+  // as a provisioned unit. Does nothing on a board that already has an
+  // identity, so this is inert on every boot after the first.
+  attemptDeviceEnrolment();
+
   refreshContactCache(); // fetch a fresh copy now if connectivity is up
 
   lastDeviceStatusAt = millis();
@@ -59,13 +100,18 @@ void setup() {
 
   Serial.println("Setup complete. Monitoring for crashes...");
   telemetryBanner(); // one-off key for whichever format TELEMETRY_MODE selects
-
-  audioPlay(TRACK_STARTUP); // "ImpactSense helmet system is now active. Stay safe."
+  devConsoleBanner(); // nothing in deployment; the bench commands otherwise
 }
 
 void loop() {
   // DEPLOYMENT - STEP 3: pairs with esp_task_wdt_init() in setup().
   // if (DEPLOYMENT_MODE) esp_task_wdt_reset();
+
+  // Typed commands from the serial monitor: a simulated button press, or a
+  // whole crash response with nothing actually sent. Compiled past in
+  // deployment. Polled before the button check so a press typed this
+  // iteration is seen by it rather than waiting for the next one.
+  devConsolePoll();
 
   checkManualSos(); // detects button held ≥ MANUAL_SOS_HOLD_MS outside a crash window
 
@@ -97,6 +143,13 @@ void loop() {
     lastPrecautionAlertAt = millis();
     handlePrecautionAlert();
   }
+
+  // Tells the rider when the helmet becomes able to reach the backend - at
+  // boot, and again whenever it gets back after losing it. Everything the
+  // speaker said before this feature was bad news, so a working helmet and a
+  // dead one sounded identical. Edge-triggered and rate-limited inside; this
+  // is two comparisons on the boring path.
+  audioOnlineCueTick(activeClient != nullptr);
 
   // Interval comes from the power state — 60 s active, 5 min idle.
   if (millis() - lastDeviceStatusAt > statusIntervalMs()) {

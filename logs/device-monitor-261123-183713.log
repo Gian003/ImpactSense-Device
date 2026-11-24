@@ -1,0 +1,379 @@
+PI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+MPU6050 found and initialized.
+NEO-6M GPS connected - receiving NMEA (1 bytes).
+  No fix yet (0 satellite(s) in view). This is normal indoors:
+  the wiring is proven, the sky is not. A cold start outdoors
+  takes 2-15 minutes. Until then the stub location is sent with
+  location_verified false, which is honest rather than wrong.
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+MAX9814 mic ready on GPIO 35 (resting level 1086).
+SIM800L disabled in config.h - skipping modem init.
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'........
+WiFi connected. Device IP: 192.168.1.11
+[Audio] Module reports volume 2, we set 20 - it has RESET.
+[Audio] See above. If it says RESET, that is the 5 V rail sagging
+[Audio] when the radio transmits - fit the 1000 uF across the boost
+[Audio] output. Resyncing so playback carries on meanwhile.
+[Audio] resynced: SD output, volume 20.
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+---------------- LIVE SENSOR READINGS ----------------
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+        sits near 9.8 - that is gravity, not movement.
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+ peak   highest seen since the previous block, so a spike
+        between prints is not missed.
+ stale  I2C read failed; last good magnitudes substituted.
+------------------------------------------------------
+
+Bench console is on: type HELP for the button and crash simulations.
+  CRASH sends nothing. BTN cancels. Both work while the alarm sounds.
+
+[   41.3s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.36  Y   -5.43  Z   -5.89   |mag|  10.88 m/s2   peak  10.88    44% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.8   |mag|    1.5 deg/s  peak    1.5     1% of 200
+[Audio] Track 9 did not start (state 30). Resending once.
+[Audio] resynced: SD output, volume 20.
+[Audio] Online cue played - the rider knows reports can go out.
+
+[   42.9s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.34  Y   -5.42  Z   -5.86   |mag|  10.84 m/s2   peak  10.86    43% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.7   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   44.4s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.34  Y   -5.45  Z   -5.88   |mag|  10.87 m/s2   peak  10.89    43% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.8   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   46.0s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.35  Y   -5.43  Z   -5.90   |mag|  10.88 m/s2   peak  10.88    44% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.8   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   47.6s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.34  Y   -5.44  Z   -5.89   |mag|  10.87 m/s2   peak  10.88    43% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   49.2s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.19  Y   -5.14  Z   -5.27   |mag|  10.29 m/s2   peak  11.17    41% of 25
+            gyro   X    -1.2  Y    +6.9  Z    -1.1   |mag|    7.0 deg/s  peak    7.0     4% of 200
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+[Provision] Playing 1 from /mp3/ - expect: startup - 'ImpactSense is active. Ride safe.'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 2 from /mp3/ - expect: CRASH ALARM - ~30 s, alarm tone + 'press the button to cancel'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 3 from /mp3/ - expect: 'No response. Sending your location now...'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 4 from /mp3/ - expect: 'Your alert is on its way...' (true whether or not the backend answered)
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+[Provision] Playing 1 from /mp3/ - expect: startup - 'ImpactSense is active. Ride safe.'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 2 from /mp3/ - expect: CRASH ALARM - ~30 s, alarm tone + 'press the button to cancel'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+[Provision] Playing 3 from /mp3/ - expect: 'No response. Sending your location now...'
+[Provision] Wrong clip? /mp3/000N.mp3 is addressed by the number in the
+[Provision] filename, so check the naming first. Copy order is a fallback.
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 8dcdef7-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+MPU6050 found and initialized.
+NEO-6M GPS connected - receiving NMEA (1 bytes).
+  No fix yet (0 satellite(s) in view). This is normal indoors:
+  the wiring is proven, the sky is not. A cold start outdoors
+  takes 2-15 minutes. Until then the stub location is sent with
+  location_verified false, which is honest rather than wrong.
+[Audio] raw reply: 7E FF 06 3F 00 00 02 FE BA EF
+[Audio] init frame 0x3F, storage bitmask 2 - SD CARD PRESENT.
+[Audio] The module can see the card, so the card is not the fault.
+DFPlayer Mini: 10 bytes came back, but no 'card online' frame.
+  Power, ground and BOTH UART wires are good - do not rewire.
+  Suspect, in this order:
+   1. No microSD card seated, or the card is not FAT32.
+   2. Clips not in an /mp3/ folder, named 0001.mp3 ... 0008.mp3.
+   3. An MP3-TF-16P clone that never sends the card-online frame.
+  Continuing in no-ACK mode - playback may well work. Try PLAY 1.
+MAX9814 mic ready on GPIO 35 (resting level 1060).
+SIM800L disabled in config.h - skipping modem init.
+Loaded cached emergency contact from flash: rider=Gian Regalado Rodriguez phone=0963*****50
+Connecting to WiFi 'BIDA_dFDEEF'.........
+WiFi connected. Device IP: 192.168.1.11
+[Audio] Module reports volume 2, we set 20 - it has RESET.
+[Audio] See above. If it says RESET, that is the 5 V rail sagging
+[Audio] when the radio transmits - fit the 1000 uF across the boost
+[Audio] output. Resyncing so playback carries on meanwhile.
+[Audio] resynced: SD output, volume 20.
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+---------------- LIVE SENSOR READINGS ----------------
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+        sits near 9.8 - that is gravity, not movement.
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+ peak   highest seen since the previous block, so a spike
+        between prints is not missed.
+ stale  I2C read failed; last good magnitudes substituted.
+------------------------------------------------------
+
+Bench console is on: type HELP for the button and crash simulations.
+  CRASH sends nothing. BTN cancels. Both work while the alarm sounds.
+
+[   41.5s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.55  Y   -5.25  Z   -5.76   |mag|  10.85 m/s2   peak  10.85    43% of 25
+            gyro   X    -0.8  Y    +0.9  Z    -0.7   |mag|    1.4 deg/s  peak    1.4     1% of 200
+[Audio] Track 9 did not start (state 30). Resending once.
+[Audio] resynced: SD output, volume 20.
+[Audio] module says: type 4, value 2
+[Audio] Online cue played - the rider knows reports can go out.
+
+[   43.0s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.56  Y   -5.25  Z   -5.76   |mag|  10.86 m/s2   peak  10.89    43% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.6   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   44.6s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.56  Y   -5.23  Z   -5.76   |mag|  10.85 m/s2   peak  10.87    43% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.5 deg/s  peak    1.5     1% of 200
+
+[   46.2s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.54  Y   -5.25  Z   -5.77   |mag|  10.85 m/s2   peak  10.87    43% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.7   |mag|    1.4 deg/s  peak    1.5     1% of 200
+
+[   47.8s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.56  Y   -5.23  Z   -5.79   |mag|  10.86 m/s2   peak  10.88    43% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.7   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   49.4s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X  +11.39  Y   -6.06  Z   -5.19   |mag|  13.91 m/s2   peak  13.91    56% of 25
+            gyro   X   +14.0  Y   +95.5  Z   +70.1   |mag|  119.3 deg/s  peak  119.3    60% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   50.9s] temp 32.7C   net wifi   power active   gps NO DATA
+            accel  X   +7.48  Y   -3.88  Z   +4.81   |mag|   9.71 m/s2   peak  12.06    39% of 25
+            gyro   X   +62.3  Y    -3.7  Z   -10.1   |mag|   63.2 deg/s  peak  136.4    32% of 200
+
+[   52.5s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X  -10.89  Y   -1.08  Z   +5.00   |mag|  12.03 m/s2   peak  15.54    48% of 25
+            gyro   X   +45.4  Y   +54.2  Z   +86.7   |mag|  111.8 deg/s  peak  522.1    56% of 200
+
+[   54.1s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   -1.49  Y   -5.02  Z   +5.88   |mag|   7.88 m/s2   peak  14.98    32% of 25
+            gyro   X  +192.5  Y  -110.9  Z    +9.5   |mag|  222.4 deg/s  peak  521.4   111% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   55.6s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   -7.14  Y   +3.20  Z   +3.47   |mag|   8.56 m/s2   peak  14.97    34% of 25
+            gyro   X   +63.8  Y  +191.3  Z   +82.0   |mag|  217.6 deg/s  peak  594.3   109% of 200
+
+[   57.2s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   -4.63  Y   +0.97  Z   +4.15   |mag|   6.29 m/s2   peak  24.74    25% of 25
+            gyro   X  -186.4  Y  -373.8  Z   -95.9   |mag|  428.6 deg/s  peak  912.1   214% of 200
+
+>> CRASH DETECTED
+   Rider has 30 seconds to cancel - press the button at any time,
+   Voice cancel is OFF - the button is the only way to stop this.
+
+>> CANCELLED - the rider pressed the button.
+   Nothing reported. No SMS, no call, no incident record.
+
+[   87.6s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +7.50  Y   -6.01  Z   -5.08   |mag|  10.87 m/s2   peak  39.93    43% of 25
+            gyro   X   +15.2  Y    -6.6  Z   +31.1   |mag|   35.2 deg/s  peak  295.3    18% of 200
+
+[   89.2s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +6.83  Y   -7.00  Z   -4.95   |mag|  10.96 m/s2   peak  10.96    44% of 25
+            gyro   X    -9.3  Y    +8.5  Z  -143.7   |mag|  144.3 deg/s  peak  144.3    72% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+[   90.7s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +6.44  Y   -7.65  Z   +3.05   |mag|  10.45 m/s2   peak  10.53    42% of 25
+            gyro   X   -39.1  Y    -6.5  Z    +9.8   |mag|   40.8 deg/s  peak   75.9    20% of 200
+
+[   92.3s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X   +9.37  Y   -8.45  Z   +1.30   |mag|  12.68 m/s2   peak  13.00    51% of 25
+            gyro   X  -112.8  Y  -215.9  Z   +37.7   |mag|  246.5 deg/s  peak  246.5   123% of 200
+
+[   93.9s] temp 32.6C   net wifi   power active   gps NO DATA
+            accel  X  +22.52  Y   -8.52  Z   -5.23   |mag|  24.63 m/s2   peak  24.63    99% of 25
+            gyro   X   +44.4  Y  +388.9  Z   +28.4   |mag|  392.5 deg/s  peak  763.6   196% of 200
+
+>> PRECAUTION - unstable riding detected. Warning the rider.
+   Below crash level, so nothing is reported. Buzzer only.
+
+>> CRASH DETECTED
+   Rider has 30 seconds to cancel - press the button at any time,
+   Voice cancel is OFF - the button is the only way to stop this.
+
+>> NO RESPONSE from the rider - treating this as a real crash.
+   1. Texting the emergency contact...
+SIM800L disabled in config.h - skipping SMS.
+   2. Reporting to the command centre...
+Reporting crash via WiFi:
+{"device_code":"IMP-003","latitude":15.9754,"longitude":120.565,"type":"collision","severity":"medium","location_verified":false}
+HTTP 201
+{"success":true,"message":"Incident reported","data":{"incident_id":485,"status":"pending"}}
+      Command centre has it. The dashboard and its callout take over.
+
+>> Response complete. Back to monitoring.
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":224000003,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":87,"model":"ImpactSense Pro X1","firmware_version":"8dcdef7-dirty","battery_level":100,"speaker_volume":20,"is_active":true,"paired_at":"2026-11-17T03:31:13.000000Z","created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-23T10:41:51.000000Z"}}
+Speaker volume set to 20 by the rider's app.

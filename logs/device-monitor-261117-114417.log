@@ -1,0 +1,297 @@
+v:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+
+mode:DIO, clock div:2
+
+load:0x3fff0030,len:1184
+
+load:0x40078000,len:13232
+
+load:0x40080400,len:3028
+
+entry 0x400805e4
+
+
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+
+
+===============================================
+
+ PROVISIONING MODE - waiting for a command...
+
+ Type:  SET <device_code>,<model>
+
+   or:  SHOW
+
+   or:  SECRET <64 hex characters>
+
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+
+ then press Enter. Full instructions are in
+
+ include/device_identity.h. No input needed to
+
+ skip - the device boots normally on its own.
+
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+
+===============================================
+
+-- Current device identity --
+
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 9c678c8-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+
+
+MPU6050 found and initialized.
+
+DFPlayer Mini not found - NO REPLY AT ALL (0 bytes back).
+
+  The module is not talking. Check, in this order:
+
+   1. VCC on 3V3 instead of 5V - it browns out before it can answer.
+
+   2. Module GND not shared with the ESP32's ground.
+
+   3. GPIO 32 -> module RX (pin 2) and GPIO 33 <- module TX (pin 3).
+
+   4. Pins miscounted on an unlabelled header - see figure_dfplayer_pinout.png.
+
+  Audio alerts are disabled.
+
+MAX9814 mic ready on GPIO 35 (resting level 1140).
+Initializing SIM800 modem for SMS...
+
+Modem answered at 9600 baud.
+Waiting for cellular network (for SMS)...
+
+GSM registration failed (signal 99/31). The SIM card itself read fine.
+  99 = no measurement: no 2G network found, or the radio reset before it could look.
+
+  The SIM800L's LED tells you which:
+
+    blinks every ~1 s    searching - power is fine, it hears no 2G network
+
+    blinks every ~3 s    registered - it was only slow; reset and retry
+
+    stops or restarts    resetting under load - the supply, not the SIM
+
+  To test the network without this hardware: put the SIM in a phone set to
+
+  2G only. No service there means no 2G here, for any module.
+
+[ 54543][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+
+[ 54558][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+
+No emergency contact cached yet.
+
+Connecting to WiFi 'BIDA_dFDEEF'.........
+
+WiFi connected. Device IP: 192.168.1.7
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+Setup complete. Monitoring for crashes...
+
+
+
+---------------- LIVE SENSOR READINGS ----------------
+
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+
+        sits near 9.8 - that is gravity, not movement.
+
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+
+ peak   highest seen since the previous block, so a spike
+
+        between prints is not missed.
+
+ stale  I2C read failed; last good magnitudes substituted.
+
+------------------------------------------------------
+
+
+
+
+[   70.2s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.30  Z   +2.66   |mag|   9.05 m/s2   peak   9.05    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   71.8s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.29  Z   +2.64   |mag|   9.07 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.5 deg/s  peak    1.7     1% of 200
+
+[   73.4s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.32  Z   +2.67   |mag|   9.08 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   75.0s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.30  Z   +2.64   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   76.5s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.31  Z   +2.62   |mag|   9.05 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   78.1s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.29  Z   +2.60   |mag|   9.05 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   79.7s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.31  Z   +2.65   |mag|   9.05 m/s2   peak   9.07    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[   81.3s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.28  Z   +2.65   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   82.9s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.31  Z   +2.66   |mag|   9.07 m/s2   peak   9.07    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.9     1% of 200
+
+[   84.4s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.30  Z   +2.63   |mag|   9.05 m/s2   peak   9.07    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[   86.0s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.69  Y   +0.30  Z   +2.64   |mag|   9.09 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[   87.6s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.31  Z   +2.60   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.5 deg/s  peak    1.8     1% of 200
+
+[   89.2s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.69  Y   +0.29  Z   +2.61   |mag|   9.08 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.8   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   90.8s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.30  Z   +2.64   |mag|   9.08 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.6   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[   92.3s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.31  Z   +2.66   |mag|   9.08 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +0.2  Z    -0.7   |mag|    1.2 deg/s  peak    1.7     1% of 200
+
+[   93.9s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.28  Z   +2.64   |mag|   9.07 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.9     1% of 200
+
+[   95.5s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.31  Z   +2.64   |mag|   9.08 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[   97.1s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.31  Z   +2.64   |mag|   9.06 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[   98.7s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.31  Z   +2.63   |mag|   9.07 m/s2   peak   9.07    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  100.2s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.32  Z   +2.62   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[  101.8s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.32  Z   +2.62   |mag|   9.06 m/s2   peak   9.09    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    2.0     1% of 200
+
+[  103.4s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.32  Z   +2.67   |mag|   9.07 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[  105.0s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.31  Z   +2.63   |mag|   9.05 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  106.6s] temp 34.7C   net wifi   power active   gps NO DATA
+            accel  X   -8.64  Y   +0.31  Z   +2.63   |mag|   9.04 m/s2   peak   9.09    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  108.1s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.32  Z   +2.66   |mag|   9.05 m/s2   peak   9.09    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.8   |mag|    1.6 deg/s  peak    2.3     1% of 200
+
+[  109.7s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.32  Z   +2.63   |mag|   9.07 m/s2   peak   9.09    36% of 25
+            gyro   X    -0.9  Y    +1.2  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+
+[  111.3s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.32  Z   +2.62   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.8   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  112.9s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.30  Z   +2.64   |mag|   9.07 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  114.5s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.30  Z   +2.65   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +0.9  Z    -0.7   |mag|    1.5 deg/s  peak    1.6     1% of 200
+
+[  116.0s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.68  Y   +0.29  Z   +2.68   |mag|   9.08 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  117.6s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.33  Z   +2.65   |mag|   9.07 m/s2   peak   9.09    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  119.2s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.32  Z   +2.64   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  120.8s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.31  Z   +2.65   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  122.4s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.28  Z   +2.63   |mag|   9.05 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.1  Z    -0.7   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+[  123.9s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.30  Z   +2.64   |mag|   9.07 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.2  Z    -0.7   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+[  125.5s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.30  Z   +2.65   |mag|   9.06 m/s2   peak   9.09    36% of 25
+            gyro   X    -1.0  Y    +1.1  Z    -0.7   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+[  127.1s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.67  Y   +0.28  Z   +2.63   |mag|   9.07 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.0  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  128.7s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.65  Y   +0.31  Z   +2.66   |mag|   9.06 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.0  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.6     1% of 200
+
+[  130.3s] temp 34.8C   net wifi   power active   gps NO DATA
+            accel  X   -8.64  Y   +0.30  Z   +2.65   |mag|   9.04 m/s2   peak   9.08    36% of 25
+            gyro   X    -0.9  Y    +1.1  Z    -0.7   |mag|    1.6 deg/s  peak    1.7     1% of 200
+Retrying queued crash report...
+
+Queued crash report delivered successfully.
+
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":183000003,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":87,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":"2026-11-17T03:31:13.000000Z","created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-17T03:47:02.000000Z"}}
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+
+[  187.6s] temp 34.9C   net wifi   power active   gps NO DATA
+            accel  X   -8.66  Y   +0.32  Z   +2.68   |mag|   9.07 m/s2   peak   9.07    36% of 25
+            gyro   X    -1.0  Y    +1.2  Z    -0.7   |mag|    1.7 deg/s  peak    1.7     1% of 200
+
+[  189.2s] temp 34.9C   net wifi   power active   gps NO DATA
+            accel  X   -8.59  Y   +0.31  Z   +2.75   |mag|   9.03 m/s2   peak   9.08    36% of 25
+            gyro   X    -1.9  Y    -2.3  Z    -0.5   |mag|    3.0 deg/s  peak    6.0     1% of 200
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":183000005,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":87,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":"2026-11-17T03:31:13.000000Z","created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-17T03:47:30.000000Z"}}
+Emergency contact cache refreshed: rider=Gian Regalado Rodriguez contact=mama phone=0963*****50
+
+[power] IDLE - still for 120s. Heartbeat -> 300s, CPU -> 80MHz. Crash detection unchanged.
+   resting - still for 143s, nothing to report (wakes the moment it moves)

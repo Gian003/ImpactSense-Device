@@ -7,6 +7,14 @@
 
 static Adafruit_MPU6050 mpu;
 
+// Set only once the sensor has actually answered on the bus. Everything else
+// in this file reads it before touching I2C.
+static bool sMpuPresent = false;
+
+bool motionSensorPresent() {
+  return sMpuPresent;
+}
+
 void sensorsInit() {
   // MPU6050 is on the I2C bus: SDA=GPIO21, SCL=GPIO22.
   // 50 kHz is half the standard 100 kHz speed — this dramatically reduces
@@ -32,10 +40,32 @@ void sensorsInit() {
     }
     Serial.println("Scan done. If nothing found, check wiring and power.");
 
-    while (1) {
-      delay(1000);
+    // In the field, a unit that cannot detect a crash must not run as though
+    // it can. Halting is the only honest thing it can do, and it is loud.
+    if (DEPLOYMENT_MODE) {
+      Serial.println();
+      Serial.println("DEPLOYMENT MODE: halting. This unit cannot detect a crash,");
+      Serial.println("and pretending otherwise would be worse than being dead.");
+      while (1) {
+        delay(1000);
+      }
     }
+
+    // On the bench that same halt stops everything else being tested - the
+    // modem, the GPS, the audio - over one sensor that may be days away in the
+    // post. So carry on, and make it impossible to forget why.
+    Serial.println();
+    Serial.println("**********************************************************");
+    Serial.println("*  CRASH DETECTION IS OFF - the motion sensor is missing. *");
+    Serial.println("*  Startup continues so the other modules can be brought  *");
+    Serial.println("*  up on the bench. Every telemetry block will repeat it. *");
+    Serial.println("*  DO NOT give this unit to a rider in this state.        *");
+    Serial.println("**********************************************************");
+    Serial.println();
+    return;
   }
+
+  sMpuPresent = true;
   Serial.println("MPU6050 found and initialized.");
 
   // Ranges wide enough to actually capture a crash-level impact without clipping.
@@ -52,6 +82,24 @@ static float sPrevGyro  = -1.0f;
 static uint8_t sDupCount = 0;
 
 void readMotion(MotionReading &out) {
+  // No sensor on the bus. Do NOT call getEvent(): each call would sit through
+  // an I2C timeout, ten times a second, and drag the whole loop - and with it
+  // the button, the mic and the telemetry - to a crawl.
+  //
+  // Reported as a resting value flagged substituted, which is a shape the rest
+  // of the firmware already handles correctly: telemetry prints the read
+  // failure, voiceMayCountNow() refuses to trust the microphone, and the crash
+  // thresholds are never crossed, so nothing is falsely reported.
+  if (!sMpuPresent) {
+    out.ax = 0.0f;  out.ay = 0.0f;  out.az = 9.81f;
+    out.gx = 0.0f;  out.gy = 0.0f;  out.gz = 0.0f;
+    out.tempC       = 0.0f;
+    out.totalAccel  = 9.81f;
+    out.totalGyro   = 0.0f;
+    out.substituted = true;
+    return;
+  }
+
   sensors_event_t accelEvent, gyroEvent, tempEvent;
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
 
@@ -117,6 +165,12 @@ void readCrashMetrics(float &totalAccel, float &totalGyro) {
 }
 
 int readBatteryPercent() {
+  // No divider fitted means GPIO 34 is floating, and reading a floating
+  // input-only pin produces drift, not a measurement. See config.h.
+  if (!BATTERY_SENSE_FITTED) {
+    return BATTERY_UNFITTED_REPORT;
+  }
+
   int raw = analogRead(BATTERY_PIN);
   float pinVoltage = (raw / 4095.0) * 3.3;
   float batteryVoltage = pinVoltage * BATTERY_DIVIDER_RATIO;

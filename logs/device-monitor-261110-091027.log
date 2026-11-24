@@ -1,0 +1,1102 @@
+x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+ImpactSense - Full Firmware (Modules 1-7)
+
+===============================================
+ PROVISIONING MODE - waiting for a command...
+ Type:  SET <device_code>,<model>
+   or:  SHOW
+   or:  SECRET <64 hex characters>
+   or:  FORGET          (wipe identity, re-enrol from scratch)
+ then press Enter. Full instructions are in
+ include/device_identity.h. No input needed to
+ skip - the device boots normally on its own.
+ Waiting 20s for a first keystroke, then 90s
+ between them. Nothing typed? It just continues.
+===============================================
+-- Current device identity --
+  device_code      : IMP-003
+  model            : ImpactSense Pro X1
+  firmware_version : 9c678c8-dirty  (from the build, not editable)
+  signing secret   : stored (reports are signed)
+[Provision] Window closed - continuing startup with the identity above.
+
+ERROR: MPU6050 not found on 0x68 or 0x69.
+Check: SDA->GPIO21, SCL->GPIO22, VCC->3.3V, GND->GND.
+Most common fix: SDA and SCL wires are swapped.
+Scanning I2C bus...
+Scan done. If nothing found, check wiring and power.
+
+**********************************************************
+*  CRASH DETECTION IS OFF - the motion sensor is missing. *
+*  Startup continues so the other modules can be brought  *
+*  up on the bench. Every telemetry block will repeat it. *
+*  DO NOT give this unit to a rider in this state.        *
+**********************************************************
+
+DFPlayer Mini not found - audio alerts disabled. Check SD card and wiring (RX=33, TX=32).
+MAX9814 mic ready on GPIO 35 (resting level 187).
+Initializing SIM800 modem for SMS...
+SIM800 modem not responding at any baud rate.
+  This is a wiring or power fault, not a SIM or load problem:
+  - SIM800 TX -> ESP32 GPIO 26, SIM800 RX -> ESP32 GPIO 27 (crossed)
+  - VCC 3.4-4.4V from a supply that can deliver ~2A bursts
+  - grounds tied together, and a 1000uF+ cap at the module
+  - status LED blinking; solid or dark means it is not running
+[ 46867][E][Preferences.cpp:483] getString(): nvs_get_str len fail: rider_name NOT_FOUND
+[ 46885][E][Preferences.cpp:483] getString(): nvs_get_str len fail: ec_phone NOT_FOUND
+No emergency contact cached yet.
+Connecting to WiFi 'BIDA_dFDEEF'.........
+WiFi connected. Device IP: 192.168.1.10
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+Setup complete. Monitoring for crashes...
+
+---------------- LIVE SENSOR READINGS ----------------
+ accel  per-axis X/Y/Z and |mag| in m/s2. At rest |mag|
+        sits near 9.8 - that is gravity, not movement.
+        Crash needs |mag| > 25.0 AND gyro > 200.
+        Precaution trips at 15.0 or 100.
+ gyro   per-axis X/Y/Z and |mag| in deg/s.
+ peak   highest seen since the previous block, so a spike
+        between prints is not missed.
+ stale  I2C read failed; last good magnitudes substituted.
+------------------------------------------------------
+
+
+[   63.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   65.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   66.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   68.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   69.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   71.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   72.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   74.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   75.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   77.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   78.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   80.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   81.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   83.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   84.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   86.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   87.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   89.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   90.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   92.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   93.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   95.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   97.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[   98.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  100.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  101.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  103.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  104.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  106.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  107.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  109.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  110.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  112.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  113.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  115.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  116.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  118.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  119.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  121.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  122.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[123482][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000002,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:12:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  148.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  149.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  151.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  152.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  154.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  155.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  157.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  158.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  160.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  161.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  163.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  164.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  166.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  167.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  169.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  170.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  172.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  173.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  175.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  176.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  178.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  179.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  181.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  183.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[183497][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000004,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:13:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  209.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  211.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  212.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  214.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  215.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  217.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  218.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  220.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  221.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  223.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  224.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  226.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  227.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  229.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  230.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  232.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  233.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  235.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  236.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  238.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  240.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  241.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  243.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[243541][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000006,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:14:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  269.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  270.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  272.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  274.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  275.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  277.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  278.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  280.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  281.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  283.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  284.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  286.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  287.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  289.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  290.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  292.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  293.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  295.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  296.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  298.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  299.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  301.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  302.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[303614][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000008,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:15:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  328.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  329.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  331.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  333.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  334.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  336.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  337.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  339.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  340.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  342.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  343.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  345.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  346.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  348.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  349.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  351.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  352.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  354.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  355.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  357.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  358.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  360.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  361.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  363.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[363649][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000010,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:16:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  388.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  389.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  391.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  392.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  394.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  395.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  397.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  398.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  400.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  401.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  403.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  404.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  406.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  407.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  409.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  411.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  412.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  414.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  415.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  417.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  418.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  420.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  421.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  423.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[423672][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000012,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:17:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  448.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  449.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  451.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  452.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  454.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  455.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  457.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  459.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  460.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  462.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  463.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  465.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  466.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  468.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  469.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  471.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  472.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  474.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  475.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  477.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  478.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  480.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  481.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  483.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[483752][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000014,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:18:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  508.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  509.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  511.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  512.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  514.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  515.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  517.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  518.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  520.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  521.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  523.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  524.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  526.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  527.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  529.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  530.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  532.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  533.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  535.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  536.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  538.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  539.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  541.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  543.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[543784][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000016,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:19:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  568.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  570.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  571.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  573.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  574.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  576.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  577.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  579.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  580.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  582.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  583.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  585.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  586.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  588.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  590.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  591.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  593.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  594.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  596.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  597.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  599.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  600.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  602.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  603.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+[603794][E][Preferences.cpp:50] begin(): nvs_open failed: NOT_FOUND
+Device status HTTP 200: {"success":true,"message":"Status updated","data":{"id":94,"device_code":"IMP-003","mac_address":"20:50:0D:CF:A9:D0","pairing_key":"2WWL1HOD","last_signature_counter":89000018,"signature_required_since":"2026-10-21T02:02:01.000000Z","sim_phone_number":null,"rider_id":null,"model":"ImpactSense Pro X1","firmware_version":"9c678c8-dirty","battery_level":100,"is_active":true,"paired_at":null,"created_at":"2026-10-21T02:01:35.000000Z","updated_at":"2026-11-10T01:20:33.000000Z"}}
+Emergency contact fetch failed: HTTP 422
+{"success":false,"message":"Device has no paired rider","data":null}
+
+[  627.9s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  629.4s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  631.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  632.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  634.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  635.5s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  637.0s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  638.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  640.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  641.6s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  643.1s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  644.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  646.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  647.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  649.2s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  650.7s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  652.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  653.8s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
+
+[  655.3s] temp 0.0C   net wifi   power active   gps NO DATA   NO MOTION SENSOR - crash detection is OFF
+            accel  X   +0.00  Y   +0.00  Z   +9.81   |mag|   9.81 m/s2   peak   9.81    39% of 25
+            gyro   X    +0.0  Y    +0.0  Z    +0.0   |mag|    0.0 deg/s  peak    0.0     0% of 200
